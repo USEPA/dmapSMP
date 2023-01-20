@@ -1,0 +1,36 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+nhdr_lines <- read_nhdplus_lines(input_lines)
+```
+
+
+```{r}
+shade_points <- sample_shade_points(nhdr_lines)
+```
+
+```{r}
+RShade_points <- calc_BFW(shade_points, nhdr_lines)
+```
+
+```{r}
+RShade_points <- add_latlon(RShade_points)
+```
+
+```{r}
+RShade_points <- extract_horizon_angle(RShade_points, rpu_boundaries)
+```
+
+```{r}
+RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="hght")
+```
+
+```{r}
+RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="cvr")
+```
+
