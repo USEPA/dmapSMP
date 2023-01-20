@@ -217,12 +217,24 @@ pre code {
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKFwiaW5pdGlhbGl6ZS5SXCIpXG5gYGAifQ== -->
+<pre class="r"><code>source(&quot;initialize.R&quot;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKFwiY29uZmlnLlJcIilcbnNvdXJjZShcIlJTaGFkZS5SXCIpXG5gYGAifQ== -->
+<pre class="r"><code>source(&quot;config.R&quot;)
+source(&quot;RShade.R&quot;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubmhkcl9saW5lcyA8LSByZWFkX25oZHBsdXNfbGluZXMoaW5wdXRfbGluZXMpXG5gYGAifQ== -->
 <pre class="r"><code>nhdr_lines &lt;- read_nhdplus_lines(input_lines)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiUmVhZGluZyBOSERQbHVzIEhSIFNoYXBlZmlsZVxuIn0= -->
-<pre><code>Reading NHDPlus HR Shapefile</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
@@ -230,108 +242,49 @@ pre code {
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2hhZGVfcG9pbnRzIDwtIHNhbXBsZV9zaGFkZV9wb2ludHMobmhkcl9saW5lcylcbmBgYCJ9 -->
 <pre class="r"><code>shade_points &lt;- sample_shade_points(nhdr_lines)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiRGlzc29sdmluZyBGbG93bGluZXNcbkdlbmVyYXRpbmcgU2hhZGUgUG9pbnRzXG4ifQ== -->
-<pre><code>Dissolving Flowlines
-Generating Shade Points</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBjYWxjX0JGVyhzaGFkZV9wb2ludHMsIG5oZHJfbGluZXMpXG5gYGBcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBjYWxjX0JGVyhzaGFkZV9wb2ludHMsIG5oZHJfbGluZXMpXG5gYGBcbmBgYFxuYGBgIn0= -->
 <pre class="r"><code>```r
+```r
 RShade_points &lt;- calc_BFW(shade_points, nhdr_lines)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBhZGRfbGF0bG9uKFJTaGFkZV9wb2ludHMpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-RShade_points &lt;- add_latlon(RShade_points)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBleHRyYWN0X2hvcml6b25fYW5nbGUoUlNoYWRlX3BvaW50cywgaHpfbGlzdClcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-RShade_points &lt;- extract_horizon_angle(RShade_points, hz_list)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPVxcaGdodFxcKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-RShade_points &lt;- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type=\hght\)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPVxcY3ZyXFwpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-RShade_points &lt;- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type=\cvr\)</code></pre>
-<p>```</p>
+<pre><code></code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBhZGRfbGF0bG9uKFJTaGFkZV9wb2ludHMpXG5gYGAifQ== -->
+<pre class="r"><code>RShade_points &lt;- add_latlon(RShade_points)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBleHRyYWN0X2hvcml6b25fYW5nbGUoUlNoYWRlX3BvaW50cywgcnB1X2JvdW5kYXJpZXMpXG5gYGAifQ== -->
+<pre class="r"><code>RShade_points &lt;- extract_horizon_angle(RShade_points, rpu_boundaries)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPVwiaGdodFwiKVxuYGBgIn0= -->
+<pre class="r"><code>RShade_points &lt;- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type=&quot;hght&quot;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPVwiY3ZyXCIpXG5gYGAifQ== -->
+<pre class="r"><code>RShade_points &lt;- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type=&quot;cvr&quot;)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKCgpgYGB7cn0Kbmhkcl9saW5lcyA8LSByZWFkX25oZHBsdXNfbGluZXMoaW5wdXRfbGluZXMpCmBgYAoKCmBgYHtyfQpzaGFkZV9wb2ludHMgPC0gc2FtcGxlX3NoYWRlX3BvaW50cyhuaGRyX2xpbmVzKQpgYGAKCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIGNhbGNfQkZXKHNoYWRlX3BvaW50cywgbmhkcl9saW5lcykKYGBgCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBhZGRfbGF0bG9uKFJTaGFkZV9wb2ludHMpCmBgYAoKYGBge3J9ClJTaGFkZV9wb2ludHMgPC0gZXh0cmFjdF9ob3Jpem9uX2FuZ2xlKFJTaGFkZV9wb2ludHMsIHJwdV9ib3VuZGFyaWVzKQpgYGAKCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIHN0YXJfc2FtcGxlKFJTaGFkZV9wb2ludHMsIHZlZ19jb3Zlciwgc3Rhcl9zYW1wbGVfYW5nbGVzLCBzdGFyX3NhbXBsZV9kaXN0YW5jZXMsIHR5cGU9ImhnaHQiKQpgYGAKCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIHN0YXJfc2FtcGxlKFJTaGFkZV9wb2ludHMsIHZlZ19jb3Zlciwgc3Rhcl9zYW1wbGVfYW5nbGVzLCBzdGFyX3NhbXBsZV9kaXN0YW5jZXMsIHR5cGU9ImN2ciIpCmBgYAoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKYGBge3J9CnNvdXJjZSgiaW5pdGlhbGl6ZS5SIikKYGBgCgpgYGB7cn0Kc291cmNlKCJjb25maWcuUiIpCnNvdXJjZSgiUlNoYWRlLlIiKQpgYGAKCmBgYHtyfQpuaGRyX2xpbmVzIDwtIHJlYWRfbmhkcGx1c19saW5lcyhpbnB1dF9saW5lcykKYGBgCgpgYGB7cn0Kc2hhZGVfcG9pbnRzIDwtIHNhbXBsZV9zaGFkZV9wb2ludHMobmhkcl9saW5lcykKYGBgCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBjYWxjX0JGVyhzaGFkZV9wb2ludHMsIG5oZHJfbGluZXMpCmBgYAoKYGBge3J9ClJTaGFkZV9wb2ludHMgPC0gYWRkX2xhdGxvbihSU2hhZGVfcG9pbnRzKQpgYGAKCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIGV4dHJhY3RfaG9yaXpvbl9hbmdsZShSU2hhZGVfcG9pbnRzLCBycHVfYm91bmRhcmllcykKYGBgCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPSJoZ2h0IikKYGBgCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPSJjdnIiKQpgYGAKCg==</div>
 
 
 

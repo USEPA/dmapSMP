@@ -467,9 +467,14 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
   hz_raster_list <- rpu$FILE
   
   for(i in hz_raster_list){
-    s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/HorizonAngle/", i, sep = "")
-    Sys.setenv(HA = s3_path)
-    system("./get_ha.sh")
+    
+    if(file.exists(paste("data/HorizonAngle/", i, sep = "")) == FALSE){
+      s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/HorizonAngle/", i, sep = "")
+      Sys.setenv(HA = s3_path)
+      system("./get_ha.sh")
+      
+    }
+    
   }
   
   

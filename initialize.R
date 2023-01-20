@@ -23,6 +23,9 @@ remove(check_install_status)
 
 options(timeout=180)
 
+system("chmod a+x ./s3.sh")
+system("chmod a+x ./get_data.sh")
+system("chmod a+x ./get_ha.sh")
 system("./s3.sh")
 system("./get_data.sh")
 
