@@ -34,9 +34,15 @@ read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
         st_transform(crs = 5070)
   }
   
-  output <- transmute(data, NHDPlusIDt = as.character(NHDPlusID)) %>%
-   asp_all() %>%
-   st_cast('LINESTRING')
+  if(("NHDPlusIDt" %in% colnames(data)) == FALSE){
+    
+    data <- transmute(data, NHDPlusIDt = as.character(NHDPlusID))
+  }
+  
+  
+  
+  output <- asp_all(data) %>%
+    st_cast('LINESTRING')
   
   return(output)
 }
@@ -598,8 +604,8 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
 star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght") {
   veg_sample <- points
 
-  for (i in dist) {
-    for (j in angle) {
+  for (i in dist_list) {
+    for (j in angle_list) {
       shade_coords <- st_coordinates(points)
 
       if (j == 0) {
@@ -641,7 +647,7 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
 
       colname <- paste(direction, type, i, sep = "")
 
-      veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(dem, shade_coords, list = TRUE)))
+      veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(veg_raster, shade_coords, list = TRUE)))
     }
   }
 

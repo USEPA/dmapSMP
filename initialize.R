@@ -12,12 +12,12 @@ if (check_install_status == FALSE){
   library(nhdplusTools)
 }
 
-check_install_status <- require(archive)
-
-if (check_install_status == FALSE){
-  install.packages("archive")
-  library(archive)
-}
+# check_install_status <- require(archive)
+# 
+# if (check_install_status == FALSE){
+#   install.packages("archive")
+#   library(archive)
+# }
 
 remove(check_install_status)
 
@@ -27,7 +27,7 @@ options(warn = -1)
 #system("chmod a+x ./s3.sh")
 system("chmod a+x ./get_data.sh")
 system("chmod a+x ./get_ha.sh")
-system("./s3.sh")
+#system("./s3.sh")
 system("./get_data.sh")
 
 

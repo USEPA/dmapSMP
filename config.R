@@ -5,7 +5,7 @@ star_sample_angles <- c(0, 45, 90, 135, 180, 225, 270, 315)
 
 star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 
-input_lines <- "data/Flowlines.gdb"
+input_lines <- "Flowlines.gdb"
 
 input_lines_feature_name <- "NHDFlowline"
 
