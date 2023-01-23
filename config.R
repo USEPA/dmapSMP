@@ -5,12 +5,10 @@ star_sample_angles <- c(0, 45, 90, 135, 180, 225, 270, 315)
 
 star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 
-#as of this version, it is assumed your input shapefile contains a field
-#containing the NHDPlus ID number. This field needs to be called NDHPlusIDt and 
-#contain text, not a double. 
+input_lines <- "data/Flowlines.gdb"
 
-input_lines <- "data/UR_NHDHR_lines_empty_atttable.shp"
+input_lines_feature_name <- "NHDFlowline"
 
-veg_cover <- NA
+personal_veg_cover <- FALSE
 
-veg_height <- NA
+personal_veg_height <- FALSE

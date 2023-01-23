@@ -21,16 +21,18 @@ if (check_install_status == FALSE){
 
 remove(check_install_status)
 
-options(timeout=180)
+options(timeout = 300)
+options(warn = -1)
 
-system("chmod a+x ./s3.sh")
+#system("chmod a+x ./s3.sh")
 system("chmod a+x ./get_data.sh")
 system("chmod a+x ./get_ha.sh")
 system("./s3.sh")
 system("./get_data.sh")
 
-veg_cover <- rast("data/Vegetation/LC22_ECH_220_reclass.tif")
-veg_height <- rast("data/Vegetation/LC22_EVH_220_reclass.tif")
+
+ifelse(personal_veg_cover == FALSE, veg_cover <- rast("data/Vegetation/LC22_ECH_220_reclass.tif"), veg_cover <- rast(personal_veg_cover))
+ifelse(personal_veg_height == FALSE, veg_height <- rast("data/Vegetation/LC22_EVH_220_reclass.tif"), veg_height <- rast(personal_veg_height))
 
 rpu_boundaries <- st_read("data/RPU/RPU_Boundary.shp") %>%
   st_transform(5070)
