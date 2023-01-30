@@ -27,11 +27,21 @@ star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 # vegetation height, set the vales below to FALSE. Otherwise, populate with the
 # file path "data/yourGrid.tif".
 
-personal_horizon_angle <- FALSE
+external_horizon_angle <- FALSE
 
-personal_veg_cover <- FALSE
+external_veg_cover <- FALSE
 
-personal_veg_height <- FALSE
+external_veg_height <- FALSE
+
+# If you wish for to provide your own table containing BFW calculations, replace 
+# the FALSE value of external_BFW_table with a path to your csv or excel
+# spreadsheet "data/yourBFW.xlsx" or "data/yourBFW.csv". 
+
+# Table MUST contain the fields "NHDPlusIDt" (NHDPlusID as text) and "bfwidth".
+# When using a csv, ensure that the NHDPlusIDt field saved as the full ID and not
+# a scientific notation number. 
+
+external_BFW_table <- FALSE
 ```
 
 Next, run the initialization processes. If this is your first time running RShade,
@@ -68,9 +78,10 @@ transects of these polygons. If you wish to only use the equation, set
 This step downloads one or more geodatabases, and may take a few minutes.
 
 ```{r}
-RShade_points <- calc_BFW(shade_points, nhdr_lines, use.transect = TRUE)
-```
 
+RShade_points <- calc_BFW(shade_points, nhdr_lines, hlr, external_BFW_table, use.transect = TRUE)
+
+```
 
 This step adds and populates latitude and longitude fields.
 
@@ -96,7 +107,7 @@ Band 2: 270-degrees Horizon Angle
 Band 2: 315-degrees Horizon Angle
 
 ```{r}
-RShade_points <- extract_horizon_angle(RShade_points, rpu_boundaries)
+RShade_points <- extract_horizon_angle(shade_points, rpu_boundaries)
 ```
 
 The next two steps extract vegetation cover and height values from the resampled

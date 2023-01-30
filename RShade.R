@@ -60,14 +60,23 @@ read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
 
 sample_shade_points <- function(lines) {
  message("Dissolving Flowlines")
+ 
  nhdplus_dissolve <- st_combine(lines)
-   sp_dissolve <- as(nhdplus_dissolve, "Spatial")
-   message("Generating Shade Points")
+ 
+ sp_dissolve <- as(nhdplus_dissolve, "Spatial")
+ 
+ message("Generating Shade Points")
+ 
  shade_num <- as.integer(round(st_length(nhdplus_dissolve) / 50, 0))
-   shade_points <- spsample(sp_dissolve, shade_num, "regular") %>%
+ 
+ shade_points <- spsample(sp_dissolve, shade_num, "regular") %>%
    st_as_sf()
-   shade_points$site_id <- seq.int(nrow(shade_points))
-   return(shade_points)
+   
+ shade_points$site_id <- seq.int(nrow(shade_points))
+   
+ 
+   
+ return(shade_points)
 }
 
 
@@ -206,55 +215,74 @@ join_points_lines <- function(points, lines, left.join = TRUE, id.field = "site_
 #' geometry. Lines must be in projected in NAD Conus Albers (EPSG:5070) and have 
 #' a unique ID field called "site_id".
 #' 
+#' @param hlr shapefile containing hydrologic landscape region areas with 
+#' coefficients and exponets for the BFW calculation equation described in
+#' Blackburn-Lynch et al. 2017 .
+#' 
 #' @param use.transect Designate whether you want to measure NHD_Area transect
 #' widths in addition to using an equation to calculate bankfull width.
 #' Default value is TRUE.
 
 
 
-calc_BFW <- function(shade_points, nhdplus_lines, use.transect = TRUE) {
-  huc <- get_huc4(nhdplus_lines)
-
-  message(paste("HUC4: ", huc, " ", sep = ""))
-
-  gdb_path <- download_NHDPlus_GDB(huc)
-
-  vaa <- assign_vaa(gdb_path)
-
-  message("Joining Points and Lines")
-  joinPoints <- join_points_lines(shade_points, nhdplus_lines)
-  
-  message("Joining VAA")
-  points_vaa <- merge(joinPoints, vaa, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE)
-  
-  message("Calculating BFW")
-  output <- mutate(points_vaa, bfwidth = ((((points_vaa$TotDASqKM / 2.59000259) * 9.4)**0.42) * 0.3048)) %>%
-    select(site_id, bfwidth, aspect)
-
-  if (use.transect == TRUE) {
-    
-    message("Calculating Transects")
-    
-    message("Getting River Lines")
-    river_lines <- get_river_lines(gdb_path, nhdplus_lines)
-    
-    message("Generating Aspects of Line Segments")
-    split_lines <- stdh_cast_substring(river_lines, to = "LINESTRING") %>%
-      asp_all()
+calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect = TRUE) {
  
-    message("Generating Transect Endpoints")
-    aspect_points <- join_points_lines(shade_points, split_lines, left.join = FALSE)
   
-    message("Creating Transect Lines and Calculating Width")
-    transect <- create_transect(aspect_points) %>%
-      calc_transect_width(gdb_path)
-
-    output$bfwidth[match(transect$site_id, output$site_id)] <- transect$bfwidth
-
-    output$aspect[match(transect$site_id, output$site_id)] <- transect$aspect
+   
+  if (bfw_table != FALSE){
+    joinPoints <- join_points_lines(shade_points, nhdplus_lines)
+    output <- copy_BFW(joinPoints, bfw_table)
+    
+    return(output)
+  } else{
+    
+    huc <- get_huc4(nhdplus_lines)
+    
+    message(paste("HUC4: ", huc, " ", sep = ""))
+    
+    gdb_path <- download_NHDPlus_GDB(huc)
+    
+    vaa <- assign_vaa(gdb_path)
+    
+    message("Joining Points and Lines")
+    joinPoints <- join_points_lines(shade_points, nhdplus_lines)
+    
+    message("Joining VAA")
+    points_vaa <- merge(joinPoints, vaa, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
+      st_join(hlr)
+    
+    message("Calculating BFW")
+    output <- mutate(points_vaa, bfwidth = points_vaa$a * points_vaa$TotDASqKM ** points_vaa$b) %>%
+      select(site_id, bfwidth, aspect, a, b)
+    
+    if (use.transect == TRUE) {
+      
+      message("Calculating Transects")
+      
+      message("Getting River Lines")
+      river_lines <- get_river_lines(gdb_path, nhdplus_lines)
+      
+      message("Generating Aspects of Line Segments")
+      split_lines <- stdh_cast_substring(river_lines, to = "LINESTRING") %>%
+        asp_all()
+      
+      message("Generating Transect Endpoints")
+      aspect_points <- join_points_lines(shade_points, split_lines, left.join = FALSE)
+      
+      message("Creating Transect Lines and Calculating Width")
+      transect <- create_transect(aspect_points) %>%
+        calc_transect_width(gdb_path)
+      
+      output$bfwidth[match(transect$site_id, output$site_id)] <- transect$bfwidth
+      
+      output$aspect[match(transect$site_id, output$site_id)] <- transect$aspect
+    }
+    
+    return(output)
+    
+    
   }
 
-  return(output)
 }
 
 
@@ -500,55 +528,65 @@ calc_transect_width <- function(transect, gdb_path, id.field = "site_id") {
 #' @param points Needs to be a dataframe of class "sf" containing point
 #' geometry. Points must be in projected in NAD Conus Albers (EPSG:5070).
 #'
-#' @param hz_raster_list a vector containing the path of each horizon angle grid
-#' file that will be used. Must contain at least 1 filepath. 
-
+#' @param rpu_boundaries must be the provided dataframe of class sf that contains
+#' the boundaries of all RPUs and corresponding file names. 
 
 extract_horizon_angle <- function(points, rpu_boundaries) {
   
   rpu <- st_filter(rpu_boundaries, points)
   
-  hz_raster_list <- rpu$FILE
+  raster_list <- rpu$FILE
   
-  for(i in hz_raster_list){
+  for(i in raster_list){
     
     if(file.exists(paste("data/HorizonAngle/", i, sep = "")) == FALSE){
-      s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/HorizonAngle/", i, sep = "")
+      s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/HorizonAngle/", i, sep = "")
       Sys.setenv(HA = s3_path)
       system("./get_ha.sh")
       
-    }
+      if(file.exists(paste("data/Elevation/", i, sep = "")) == FALSE){
+        s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/Elevation/", i, sep = "")
+        Sys.setenv(DEM = s3_path)
+        system("./get_dem.sh")
+      
+     }
+    
+   }
+  
+
     
   }
   
   
-  hz_raster <- rast(paste("data/HorizonAngle/", hz_raster_list[1], sep = ""))
+  ha_raster <- rast(paste("data/HorizonAngle/", raster_list[1], sep = ""))
+  dem_raster <- rast(paste("data/Elevation/", raster_list[1], sep = ""))
 
   output <- mutate(points,
-    elevation = unlist(terra::extract(hz_raster[[1]], st_coordinates(points), list = TRUE)),
-    topoNN = unlist(terra::extract(hz_raster[[2]], st_coordinates(points), list = TRUE)),
-    topoNE = unlist(terra::extract(hz_raster[[3]], st_coordinates(points), list = TRUE)),
-    topoEE = unlist(terra::extract(hz_raster[[4]], st_coordinates(points), list = TRUE)),
-    topoSE = unlist(terra::extract(hz_raster[[5]], st_coordinates(points), list = TRUE)),
-    topoSS = unlist(terra::extract(hz_raster[[6]], st_coordinates(points), list = TRUE)),
-    topoSW = unlist(terra::extract(hz_raster[[7]], st_coordinates(points), list = TRUE)),
-    topoWW = unlist(terra::extract(hz_raster[[8]], st_coordinates(points), list = TRUE)),
-    topoNW = unlist(terra::extract(hz_raster[[9]], st_coordinates(points), list = TRUE))
+    elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)),
+    topoNN = unlist(terra::extract(ha_raster[[1]], st_coordinates(points), list = TRUE)),
+    topoNE = unlist(terra::extract(ha_raster[[2]], st_coordinates(points), list = TRUE)),
+    topoEE = unlist(terra::extract(ha_raster[[3]], st_coordinates(points), list = TRUE)),
+    topoSE = unlist(terra::extract(ha_raster[[4]], st_coordinates(points), list = TRUE)),
+    topoSS = unlist(terra::extract(ha_raster[[5]], st_coordinates(points), list = TRUE)),
+    topoSW = unlist(terra::extract(ha_raster[[6]], st_coordinates(points), list = TRUE)),
+    topoWW = unlist(terra::extract(ha_raster[[7]], st_coordinates(points), list = TRUE)),
+    topoNW = unlist(terra::extract(ha_raster[[8]], st_coordinates(points), list = TRUE))
   )
-  if (length(hz_raster_list) > 1) {
-    for (i in 2:length(hz_raster_list)) {
-      hz_raster <- rast(paste("data/HorizonAngle/", hz_raster_list[i], sep = ""))
-      message("Evaluating Additoinal Horizon Angle Grids...")
+  if (length(raster_list) > 1) {
+    for (i in 2:length(raster_list)) {
+      ha_raster <- rast(paste("data/HorizonAngle/", raster_list[i], sep = ""))
+      dem_raster <- rast(paste("data/Elevation/", raster_list[i], sep = ""))
+      message("Evaluating Additional Grids...")
       output2 <- mutate(points,
-        elevation = unlist(terra::extract(hz_raster[[1]], st_coordinates(points), list = TRUE)),
-        topoNN = unlist(terra::extract(hz_raster[[2]], st_coordinates(points), list = TRUE)),
-        topoNE = unlist(terra::extract(hz_raster[[3]], st_coordinates(points), list = TRUE)),
-        topoEE = unlist(terra::extract(hz_raster[[4]], st_coordinates(points), list = TRUE)),
-        topoSE = unlist(terra::extract(hz_raster[[5]], st_coordinates(points), list = TRUE)),
-        topoSS = unlist(terra::extract(hz_raster[[6]], st_coordinates(points), list = TRUE)),
-        topoSW = unlist(terra::extract(hz_raster[[7]], st_coordinates(points), list = TRUE)),
-        topoWW = unlist(terra::extract(hz_raster[[8]], st_coordinates(points), list = TRUE)),
-        topoNW = unlist(terra::extract(hz_raster[[9]], st_coordinates(points), list = TRUE))
+        elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)),
+        topoNN = unlist(terra::extract(ha_raster[[1]], st_coordinates(points), list = TRUE)),
+        topoNE = unlist(terra::extract(ha_raster[[2]], st_coordinates(points), list = TRUE)),
+        topoEE = unlist(terra::extract(ha_raster[[3]], st_coordinates(points), list = TRUE)),
+        topoSE = unlist(terra::extract(ha_raster[[4]], st_coordinates(points), list = TRUE)),
+        topoSS = unlist(terra::extract(ha_raster[[5]], st_coordinates(points), list = TRUE)),
+        topoSW = unlist(terra::extract(ha_raster[[6]], st_coordinates(points), list = TRUE)),
+        topoWW = unlist(terra::extract(ha_raster[[7]], st_coordinates(points), list = TRUE)),
+        topoNW = unlist(terra::extract(ha_raster[[8]], st_coordinates(points), list = TRUE))
       )
 
       output$elevation <- coalesce(output$elevation, output2$elevation)
@@ -673,4 +711,21 @@ add_latlon <- function(points) {
   output <- mutate(points, lat = coords[, 2], lon = coords[, 1])
 
   return(output)
+}
+
+copy_BFW <- function(points, bfw_table){
+  
+  message("Reading BFW Table")
+  if(tools::file_ext(bfw_table) == "xls" | tools::file_ext(bfw_table) == "xlsx"){
+    message("Excel file detected")
+    bfw <- read_excel(bfw_table)
+  } else if(tools::file_ext(bfw_table) == "csv"){
+    message("CSV detected")
+    bfw <- read.csv(bfw_table,  colClasses=c("NHDPlusIDt"="character"))
+  } else{
+    stop("Failed to read BFW Table. File must be .xls, .xlsx, or .csv.")
+  }
+  
+  output <- merge(points, bfw, "NHDPlusIDt", all.x = TRUE) %>%
+    select(site_id, bfwidth, aspect)
 }
