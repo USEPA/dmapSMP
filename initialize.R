@@ -3,6 +3,7 @@ library(sp)
 library(terra)
 library(tidyverse)
 library(readxl)
+library(parallel)
 
 
 check_install_status <- require(nhdplusTools)
@@ -33,8 +34,8 @@ system("chmod a+x ./get_dem.sh")
 system("./get_data.sh")
 
 
-ifelse(personal_veg_cover == FALSE, veg_cover <- rast("data/Vegetation/LC22_ECH_220_reclass.tif"), veg_cover <- rast(personal_veg_cover))
-ifelse(personal_veg_height == FALSE, veg_height <- rast("data/Vegetation/LC22_EVH_220_reclass.tif"), veg_height <- rast(personal_veg_height))
+ifelse(external_veg_cover == FALSE, veg_cover <- rast("data/Vegetation/LC22_ECH_220_reclass.tif"), veg_cover <- rast(external_veg_cover))
+ifelse(external_veg_height == FALSE, veg_height <- rast("data/Vegetation/LC22_EVH_220_reclass.tif"), veg_height <- rast(external_veg_height))
 
 rpu_boundaries <- st_read("data/RPU/RPU_Boundary.shp", quiet = TRUE) %>%
   st_transform(5070)

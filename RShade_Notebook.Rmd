@@ -14,6 +14,8 @@ input_lines <- "data/UR_NHDHR_lines_empty_atttable.shp"
 
 input_lines_feature_name <- "NHDFlowline"
 
+sample_point_distance <- 50
+
 # Sample angles can only contain the angles 0, 45, 135, 180, 225, 270, 315. 
 # Values can be removed, but new values cannot be added
 
@@ -65,7 +67,7 @@ Keep in mind the output changes each time this is run. This may take a few minut
 especially if your input dataset is large.
 
 ```{r}
-shade_points <- sample_shade_points(nhdr_lines)
+shade_points <- sample_shade_points(nhdr_lines, sample_point_distance)
 ```
 
 This step calculates the bankfull width (BFW) of each shade point. By default, this 
@@ -121,6 +123,13 @@ RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_
 ```{r}
 RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="cvr")
 ```
+
+This is a test for parallelization of the star_sample function. 
+
+```{r}
+RShade_points <- star_sample_parallel(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="hght")
+```
+
 
 The final optional steps allow you to export the final result as either a .csv or 
 shapefile. These can then be downloaded from the "Files" window.

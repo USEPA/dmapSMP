@@ -58,7 +58,7 @@ read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
 #' geometry. lines must be in projected in NAD Conus Albers (EPSG:5070).
 
 
-sample_shade_points <- function(lines) {
+sample_shade_points <- function(lines, distance) {
  message("Dissolving Flowlines")
  
  nhdplus_dissolve <- st_combine(lines)
@@ -67,7 +67,7 @@ sample_shade_points <- function(lines) {
  
  message("Generating Shade Points")
  
- shade_num <- as.integer(round(st_length(nhdplus_dissolve) / 50, 0))
+ shade_num <- as.integer(round(st_length(nhdplus_dissolve) / distance, 0))
  
  shade_points <- spsample(sp_dissolve, shade_num, "regular") %>%
    st_as_sf()
@@ -713,6 +713,22 @@ add_latlon <- function(points) {
   return(output)
 }
 
+
+#' Copies bankfull width values from a table and uses these values in lieu of 
+#' calculating them using equations of transect lenghts. 
+#' 
+#' @description 
+#' Takes either an excel table or csv and matches the bankfull width values based
+#' on NHDPlusIDt. Values are then copied into the bfwidth column of your RShade 
+#' points. 
+#' 
+#' @param points Needs to be a dataframe of class "sf" containing point
+#' geometry. Points must be in projected in NAD Conus Albers (EPSG:5070).
+#' 
+#' @param bfw_table Needs to be either a csv or xlsx. Must contain at least 2
+#' columns: One column called NHDPlusIDt containing the ID values as text and one
+#' column called 'bfwidth' containing the values for bankfull width in meters.
+
 copy_BFW <- function(points, bfw_table){
   
   message("Reading BFW Table")
@@ -728,4 +744,46 @@ copy_BFW <- function(points, bfw_table){
   
   output <- merge(points, bfw, "NHDPlusIDt", all.x = TRUE) %>%
     select(site_id, bfwidth, aspect)
+}
+
+
+#' Extracts the values of a grid using a multi-angle, multi-distance sampling 
+#' method from each input point. This is the same process as `star_sample()`, 
+#' but with parallel processing implemented to decrease processing time. 
+#' 
+#' @description 
+#' For every input point, extract the value at a given angle and distance away
+#' and place that value in a column within the input point data frame. This is
+#' done for every angle and distance combination. 
+#' 
+#' @param points Needs to be a dataframe of class "sf" containing point
+#' geometry. Points must be in projected in NAD Conus Albers (EPSG:5070).
+#'
+#' @param veg_raster Path to the raster file you will be using.
+#' 
+#' @param angle_list Vector containing the angles the sample points will be 
+#' generated at. Angles can be removed, but angles outside of the defaul 8 angles
+#' are not valid. 
+#' 
+#' @param dist_list Vector containing the sample point distances from the origin.
+#' 
+#' @param type The middle part of the column name. Vegetation hight is "hght,
+#' and vegetation cover is "cvr". Default value is "hght".
+
+star_sample_parallel <- function(points, veg_raster, angle_list, dist_list, type = "hght") {
+  
+  sample_list <- mclapply(dist_list, function(x){
+    
+    star_sample_points <- star_sample(points, veg_raster, angle_list, x, type)
+    
+  }, mc.cores = 4)
+  
+  for(i in 2:length(sample_list)){
+    
+    sample_list[[1]] <- mutate(sample_list[[1]], sample_list[[i]])
+  }
+  
+  result <- sample_list[[1]]
+  
+  return(result)
 }
