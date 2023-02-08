@@ -80,7 +80,9 @@ transects of these polygons. If you wish to only use the equation, set
 This step downloads one or more geodatabases, and may take a few minutes.
 
 ```{r}
+
 RShade_points <- calc_BFW(shade_points, nhdr_lines, hlr, external_BFW_table, use.transect = TRUE)
+
 ```
 
 This step adds and populates latitude and longitude fields.
@@ -115,7 +117,7 @@ Band 7: 270-degrees Horizon Angle
 Band 8: 315-degrees Horizon Angle
 
 ```{r}
-RShade_points <- extract_horizon_angle(RShade_points, rpu_boundaries)
+RShade_points <- extract_horizon_angle_parallel(RShade_points, rpu_boundaries)
 ```
 
 The next two steps extract vegetation cover and height values from the resampled
@@ -123,13 +125,12 @@ Landfire grids. The more angles and distances sampled, the longer these steps
 will take. 
 
 ```{r}
-RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="hght")
+RShade_points <- star_sample_parallel(RShade_points, veg_cover, star_sample_angles, star_sample_distances, output_type="cvr")
 ```
 
 ```{r}
-RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="cvr")
+RShade_points <- star_sample_parallel(RShade_points, veg_height, star_sample_angles, star_sample_distances, output_type="hght")
 ```
-
 
 The final optional steps allow you to export the final result as either a .csv or 
 shapefile. These can then be downloaded from the "Files" window.

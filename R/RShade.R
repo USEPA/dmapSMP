@@ -23,15 +23,17 @@ read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
   type <- tools::file_ext(nhdplus_data)
   
   if(type == "gdb"){
-    data <- st_read(nhdplus_data, layer = nhdplus_feature_name) %>%
+    message("Geodatabase detected. Importing into RShade...")
+    data <- st_read(nhdplus_data, layer = nhdplus_feature_name, quiet = TRUE) %>%
       st_zm() %>%
       st_transform(crs = 5070)
   }
  
   if(type == "shp"){
-      data <- st_read(nhdplus_data) %>%
-        st_zm() %>%
-        st_transform(crs = 5070)
+    message("Shapefile detected. Importing into RShade...")
+    data <- st_read(nhdplus_data, quiet = TRUE) %>%
+      st_zm() %>%
+      st_transform(crs = 5070)
   }
   
   if(("NHDPlusIDt" %in% colnames(data)) == FALSE){
@@ -40,10 +42,11 @@ read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
   }
   
   
-  
+  message("Calculating Aspect")
   output <- asp_all(data) %>%
     st_cast('LINESTRING')
   
+  message("NHDPlus HR Line Import Complete")
   return(output)
 }
 
@@ -73,6 +76,8 @@ sample_shade_points <- function(lines, distance) {
    st_as_sf()
    
  shade_points$site_id <- seq.int(nrow(shade_points))
+ 
+ message("Shade Point Generation Complete")
    
  
    
@@ -142,7 +147,7 @@ download_NHDPlus_GDB <- function(huc4) {
 #' @noRD
 
 assign_vaa <- function(gdb_path) {
-  vaa <- st_read(gdb_path[1], layer = "NHDPlusFlowlineVAA")
+  vaa <- st_read(gdb_path[1], layer = "NHDPlusFlowlineVAA", quiet = TRUE)
 
   vaa_TotDaSqKM <- as.data.frame(cbind(vaa$NHDPlusID, vaa$TotDASqKm))
   
@@ -152,7 +157,7 @@ assign_vaa <- function(gdb_path) {
 
   if (length(gdb_path) > 1) {
     for (i in 2:length(gdb_path)) {
-      vaa2 <- st_read(gdb_path[i], layer = "NHDPlusFlowlineVAA")
+      vaa2 <- st_read(gdb_path[i], layer = "NHDPlusFlowlineVAA", quiet = TRUE)
       vaa_TotDaSqKM2 <- as.data.frame(cbind(vaa$NHDPlusID, vaa$TotDASqKm))
       colnames(vaa_TotDaSqKM2) <- c("NHDPlusID", "TotDASqKM")
       
@@ -260,10 +265,10 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
       message("Calculating Transects")
       
       message("Getting River Lines")
-      river_lines <- get_river_lines(gdb_path, nhdplus_lines)
+      river_lines <- suppressWarnings(get_river_lines(gdb_path, nhdplus_lines))
       
       message("Generating Aspects of Line Segments")
-      split_lines <- stdh_cast_substring(river_lines, to = "LINESTRING") %>%
+      split_lines <- suppressWarnings(stdh_cast_substring(river_lines, to = "LINESTRING")) %>%
         asp_all()
       
       message("Generating Transect Endpoints")
@@ -277,6 +282,8 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
       
       output$aspect[match(transect$site_id, output$site_id)] <- transect$aspect
     }
+    
+    message("Bankfull Wideth Calculation Complete")
     
     return(output)
     
@@ -380,14 +387,14 @@ stdh_cast_substring <- function(river_lines, to = "MULTILINESTRING") {
 
 
 get_river_lines <- function(gdb_path, nhdplus_lines) {
-  streams_rivers <- st_read(gdb_path[1], layer = "NHDArea") %>%
+  streams_rivers <- st_read(gdb_path[1], layer = "NHDArea", quiet = TRUE) %>%
     filter(FType == 460) %>%
     st_make_valid() %>%
     st_transform(5070)
   
   if (length(gdb_path) > 1) {
     for (i in 2:length(gdb_path)) {
-      streams_rivers2 <- st_read(gdb_path[i], layer = "NHDArea") %>%
+      streams_rivers2 <- st_read(gdb_path[i], layer = "NHDArea", quiet = TRUE) %>%
         filter(FType == 460) %>%
         st_make_valid() %>%
         st_transform(5070)
@@ -471,14 +478,14 @@ create_transect <- function(aspect_points, width = 50) {
 #' @noRD
 
 calc_transect_width <- function(transect, gdb_path, id.field = "site_id") {
-  streams_rivers <- st_read(gdb_path[1], layer = "NHDArea") %>%
+  streams_rivers <- st_read(gdb_path[1], layer = "NHDArea", quiet = TRUE) %>%
     filter(FType == 460) %>%
     st_make_valid() %>%
     st_transform(5070)
   
   if (length(gdb_path) > 1) {
     for (i in 2:length(gdb_path)) {
-      streams_rivers2 <- st_read(gdb_path[i], layer = "NHDArea") %>%
+      streams_rivers2 <- st_read(gdb_path[i], layer = "NHDArea", quiet = TRUE) %>%
         filter(FType == 460) %>%
         st_make_valid() %>%
         st_transform(5070)
@@ -491,8 +498,10 @@ calc_transect_width <- function(transect, gdb_path, id.field = "site_id") {
     st_intersects(streams_rivers) %>%
     lengths() > 0
 
-  bfw <- filter(transect, transect$indicator == FALSE) %>%
-    st_intersection(streams_rivers)
+  suppressWarnings({
+    bfw <- filter(transect, transect$indicator == FALSE) %>%
+      st_intersection(streams_rivers)
+  })
 
   test_duplicate <- subset(bfw, duplicated(site_id))
 
@@ -532,7 +541,7 @@ calc_transect_width <- function(transect, gdb_path, id.field = "site_id") {
 #' the boundaries of all RPUs and corresponding file names. 
 
 extract_horizon_angle <- function(points, rpu_boundaries) {
-  
+  message("Fetching Raster Datasets")
   rpu <- st_filter(rpu_boundaries, points)
   
   raster_list <- rpu$FILE
@@ -543,26 +552,14 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
       s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/HorizonAngle/", i, sep = "")
       Sys.setenv(HA = s3_path)
       system("./get_ha.sh")
-      
-      if(file.exists(paste("data/Elevation/", i, sep = "")) == FALSE){
-        s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/Elevation/", i, sep = "")
-        Sys.setenv(DEM = s3_path)
-        system("./get_dem.sh")
-      
-     }
     
    }
-  
-
-    
   }
   
-  
+  message("Extracting Elevation Values")
   ha_raster <- rast(paste("data/HorizonAngle/", raster_list[1], sep = ""))
-  dem_raster <- rast(paste("data/Elevation/", raster_list[1], sep = ""))
 
   output <- mutate(points,
-    elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)),
     topoNN = unlist(terra::extract(ha_raster[[1]], st_coordinates(points), list = TRUE)),
     topoNE = unlist(terra::extract(ha_raster[[2]], st_coordinates(points), list = TRUE)),
     topoEE = unlist(terra::extract(ha_raster[[3]], st_coordinates(points), list = TRUE)),
@@ -578,7 +575,6 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
       dem_raster <- rast(paste("data/Elevation/", raster_list[i], sep = ""))
       message("Evaluating Additional Grids...")
       output2 <- mutate(points,
-        elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)),
         topoNN = unlist(terra::extract(ha_raster[[1]], st_coordinates(points), list = TRUE)),
         topoNE = unlist(terra::extract(ha_raster[[2]], st_coordinates(points), list = TRUE)),
         topoEE = unlist(terra::extract(ha_raster[[3]], st_coordinates(points), list = TRUE)),
@@ -589,7 +585,6 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
         topoNW = unlist(terra::extract(ha_raster[[8]], st_coordinates(points), list = TRUE))
       )
 
-      output$elevation <- coalesce(output$elevation, output2$elevation)
       output$topoNN <- coalesce(output$topoNN, output2$topoNN)
       output$topoNE <- coalesce(output$topoNE, output2$topoNE)
       output$topoEE <- coalesce(output$topoEE, output2$topoEE)
@@ -600,7 +595,6 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
       output$topoNW <- coalesce(output$topoNW, output2$topoNW)
 
       output <- mutate(output,
-        elevation = case_when(elevation < output2$elevation ~ output2$elevation, TRUE ~ elevation),
         topoNN = case_when(topoNN < output2$topoNN ~ output2$topoNN, TRUE ~ topoNN),
         topoNE = case_when(topoNE < output2$topoNE ~ output2$topoNE, TRUE ~ topoNE),
         topoEE = case_when(topoEE < output2$topoEE ~ output2$topoEE, TRUE ~ topoEE),
@@ -612,7 +606,7 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
       )
     }
   }
-
+  message("Horizon Angle Extraction Complete")
   return(output)
 }
 
@@ -640,8 +634,10 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
 #' and vegetation cover is "cvr". Default value is "hght".
 
 star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght") {
+  
   veg_sample <- points
-
+  
+  message("Extracting Raster Values")
   for (i in dist_list) {
     for (j in angle_list) {
       shade_coords <- st_coordinates(points)
@@ -688,7 +684,7 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
       veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(veg_raster, shade_coords, list = TRUE)))
     }
   }
-
+  message("Complete")
   return(veg_sample)
 }
 
@@ -709,7 +705,7 @@ add_latlon <- function(points) {
   coords <- st_coordinates(nad83Points)
 
   output <- mutate(points, lat = coords[, 2], lon = coords[, 1])
-
+  message("Latitude and Longitude Calculations Completed")
   return(output)
 }
 
@@ -770,13 +766,15 @@ copy_BFW <- function(points, bfw_table){
 #' @param type The middle part of the column name. Vegetation hight is "hght,
 #' and vegetation cover is "cvr". Default value is "hght".
 
-star_sample_parallel <- function(points, veg_raster, angle_list, dist_list, type = "hght") {
+star_sample_parallel <- function(input_points, input_raster, angles, distances, output_type = "hght") {
   
-  sample_list <- mclapply(dist_list, function(x){
-    
-    star_sample_points <- star_sample(points, veg_raster, angle_list, x, type)
-    
+  message("Extracting Raster Values")
+  sample_list <- mclapply(distances, function(x){
+     
+    star_sample_points <- star_sample(input_points, input_raster, angles, x, output_type)
+     
   }, mc.cores = 4)
+  
   
   for(i in 2:length(sample_list)){
     
@@ -785,5 +783,149 @@ star_sample_parallel <- function(points, veg_raster, angle_list, dist_list, type
   
   result <- sample_list[[1]]
   
+  message("Complete")
   return(result)
+}
+
+extract_elevation <- function(points, rpu_boundaries) {
+  
+  message("Fetching Raster Datasets")
+  rpu <- st_filter(rpu_boundaries, points)
+  
+  raster_list <- rpu$FILE
+  
+  for(i in raster_list){
+    
+    if(file.exists(paste("data/Elevation/", i, sep = "")) == FALSE){
+      s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/Elevation/", i, sep = "")
+      Sys.setenv(DEM = s3_path)
+      system("./shell/get_dem.sh")
+      
+    }
+    
+  }
+  
+  dem_raster <- rast(paste("data/Elevation/", raster_list[1], sep = ""))
+  message("Extracting Elevation Values")
+  output <- mutate(points, elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)))
+  if (length(raster_list) > 1) {
+    for (i in 2:length(raster_list)) {
+      ha_raster <- rast(paste("data/HorizonAngle/", raster_list[i], sep = ""))
+      dem_raster <- rast(paste("data/Elevation/", raster_list[i], sep = ""))
+      message("Evaluating Additional Grids")
+      output2 <- mutate(points, elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)))
+      
+      output$elevation <- coalesce(output$elevation, output2$elevation)
+    }
+  }
+  
+  message("Elevation Extraction Complete")
+  return(output)
+}
+
+extract_ha_single <- function(layer_numbers, input_raster, input_points){
+  
+  if(layer_numbers == 1){
+    output <- mutate(input_points, topoNN = unlist(terra::extract(input_raster[[1]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  if(layer_numbers == 2){
+    output <- mutate(input_points, topoNE = unlist(terra::extract(input_raster[[2]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  if(layer_numbers == 3){
+    output <- mutate(input_points, topoEE = unlist(terra::extract(input_raster[[3]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  if(layer_numbers == 4){
+    output <- mutate(input_points, topoSE = unlist(terra::extract(input_raster[[4]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  if(layer_numbers == 5){
+    output <- mutate(input_points, topoSS = unlist(terra::extract(input_raster[[5]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  if(layer_numbers == 6){
+    output <- mutate(input_points, topoSW = unlist(terra::extract(input_raster[[6]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  if(layer_numbers == 7){
+    output <- mutate(input_points, topoWW = unlist(terra::extract(input_raster[[7]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  if(layer_numbers == 8){
+    output <- mutate(input_points, topoNW = unlist(terra::extract(input_raster[[8]], st_coordinates(input_points), list = TRUE)))
+  }
+  
+  return(output)
+}
+
+extract_horizon_angle_parallel <- function(points, rpu_boundaries) {
+  
+  message("Fetching Raster Datasets")
+  rpu <- st_filter(rpu_boundaries, points)
+  
+  raster_list <- rpu$FILE
+  
+  for(i in raster_list){
+    
+    if(file.exists(paste("data/HorizonAngle/", i, sep = "")) == FALSE){
+      s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/HorizonAngle/", i, sep = "")
+      Sys.setenv(HA = s3_path)
+      system("./shell/get_ha.sh")
+    }
+  }
+  
+  
+  ha_raster <- rast(paste("data/HorizonAngle/", raster_list[1], sep = ""))
+  
+  layer_num <- 1:8
+  
+  message("Extracting Elevation Values")
+  
+  ha_output_list <- mclapply(layer_num, extract_ha_single, input_raster = ha_raster, input_points = points, mc.cores = 4)
+  
+  for(i in 2:length(ha_output_list)){
+    ha_output_list[[1]] <- mutate(ha_output_list[[1]], ha_output_list[[i]])
+  }
+  
+  output <- ha_output_list[[1]]
+  
+  if (length(raster_list) > 1) {
+    for (i in 2:length(raster_list)) {
+      ha_raster <- rast(paste("data/HorizonAngle/", raster_list[i], sep = ""))
+      
+      message("Evaluating Additional Grids")
+      ha_output_list2 <- mclapply(layer_num, extract_ha_single, input_raster = ha_raster, input_points = points, mc.cores = 4)
+      
+      for(i in 2:length(ha_output_list2)){
+        ha_output_list2[[1]] <- mutate(ha_output_list2[[1]], ha_output_list2[[i]])
+      }
+      
+      output2 <- ha_output_list2[[1]]
+      
+      output$topoNN <- coalesce(output$topoNN, output2$topoNN)
+      output$topoNE <- coalesce(output$topoNE, output2$topoNE)
+      output$topoEE <- coalesce(output$topoEE, output2$topoEE)
+      output$topoSE <- coalesce(output$topoSE, output2$topoSE)
+      output$topoSS <- coalesce(output$topoSS, output2$topoSS)
+      output$topoSW <- coalesce(output$topoSW, output2$topoSW)
+      output$topoWW <- coalesce(output$topoWW, output2$topoWW)
+      output$topoNW <- coalesce(output$topoNW, output2$topoNW)
+      
+      output <- mutate(output,
+                       topoNN = case_when(topoNN < output2$topoNN ~ output2$topoNN, TRUE ~ topoNN),
+                       topoNE = case_when(topoNE < output2$topoNE ~ output2$topoNE, TRUE ~ topoNE),
+                       topoEE = case_when(topoEE < output2$topoEE ~ output2$topoEE, TRUE ~ topoEE),
+                       topoSE = case_when(topoSE < output2$topoSE ~ output2$topoSE, TRUE ~ topoSE),
+                       topoSS = case_when(topoSS < output2$topoSS ~ output2$topoSS, TRUE ~ topoSS),
+                       topoSW = case_when(topoSW < output2$topoSW ~ output2$topoSW, TRUE ~ topoSW),
+                       topoWW = case_when(topoWW < output2$topoWW ~ output2$topoWW, TRUE ~ topoWW),
+                       topoNW = case_when(topoNW < output2$topoNW ~ output2$topoNW, TRUE ~ topoNW)
+      )
+    }
+  }
+  
+  message("Horizon Angle Extraction Complete")
+  return(output)
 }
