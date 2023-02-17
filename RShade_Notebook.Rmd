@@ -123,11 +123,31 @@ Landfire grids. The more angles and distances sampled, the longer these steps
 will take. 
 
 ```{r}
-RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="hght")
+RShade_points <- star_sample(RShade_points, veg_height, star_sample_angles, star_sample_distances, type="hght")
 ```
 
 ```{r}
-RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="cvr")
+RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="dens")
+```
+
+The final step calculates additional columns that are needed for processing in 
+RShade. This is done at the end because many of the columns are based on other
+columns that were calculated as a part of RShade. 
+
+```{r}
+RShade_points <- finalize_cols(RShade_points)
+```
+
+
+If you have additional columns you want to add to the output, you can upload a
+table that contains the columns you want to include along with a text field 
+containing ID values called NDHPlusIDt. Edit the block below to include the path
+to the excel or csv.
+
+```{r}
+additional_table <- "data/Test_table.xlsx"
+
+RShade_points <- copy_table(RShade_points, nhdr_lines, additional_table)
 ```
 
 

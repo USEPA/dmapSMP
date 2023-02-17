@@ -224,6 +224,9 @@ join_points_lines <- function(points, lines, left.join = TRUE, id.field = "site_
 #' coefficients and exponets for the BFW calculation equation described in
 #' Blackburn-Lynch et al. 2017 .
 #' 
+#' @param bfw_table file path to csv or excel file containing bankfull width values
+#' you want to use in place of calculating said values.
+#' 
 #' @param use.transect Designate whether you want to measure NHD_Area transect
 #' widths in addition to using an equation to calculate bankfull width.
 #' Default value is TRUE.
@@ -232,8 +235,6 @@ join_points_lines <- function(points, lines, left.join = TRUE, id.field = "site_
 
 calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect = TRUE) {
  
-  
-   
   if (bfw_table != FALSE){
     joinPoints <- join_points_lines(shade_points, nhdplus_lines)
     output <- copy_BFW(joinPoints, bfw_table)
@@ -258,7 +259,7 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
     
     message("Calculating BFW")
     output <- mutate(points_vaa, bfwidth = points_vaa$a * points_vaa$TotDASqKM ** points_vaa$b) %>%
-      select(site_id, bfwidth, aspect, a, b)
+      select(site_id, bfwidth, aspect)
     
     if (use.transect == TRUE) {
       
@@ -284,6 +285,8 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
     }
     
     message("Bankfull Wideth Calculation Complete")
+    
+    output <- filter(output, bfwidth > 0)
     
     return(output)
     
@@ -521,15 +524,14 @@ calc_transect_width <- function(transect, gdb_path, id.field = "site_id") {
 #' @description 
 #' At every shade point location, extract the elevation/horizon angle value from
 #' the horizon angle grids. In this version, the raster must be organized as follows:
-#' * Layer 1: elevation
-#' * Layer 2: 0-degree horizon angle
-#' * Layer 3: 45-degree horizon angle
-#' * Layer 4: 90-degree horizon angle
-#' * Layer 5: 135-degree horizon angle
-#' * Layer 6: 180-degree horizon angle
-#' * Layer 7: 225-degree horizon angle
-#' * Layer 8: 270-degree horizon angle
-#' * Layer 9: 315-degree horizon angle
+#' * Layer 1: 0-degree horizon angle
+#' * Layer 2: 45-degree horizon angle
+#' * Layer 3: 90-degree horizon angle
+#' * Layer 4: 135-degree horizon angle
+#' * Layer 5: 180-degree horizon angle
+#' * Layer 6: 225-degree horizon angle
+#' * Layer 7: 270-degree horizon angle
+#' * Layer 8: 315-degree horizon angle
 #' 
 #' In areas where horizon angle grids overlap, the largest value is used. Returns
 #' the input with additional columns.
@@ -556,7 +558,7 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
    }
   }
   
-  message("Extracting Elevation Values")
+  message("Extracting Horizon Angle Values")
   ha_raster <- rast(paste("data/HorizonAngle/", raster_list[1], sep = ""))
 
   output <- mutate(points,
@@ -679,9 +681,15 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
         direction <- "NW"
       }
 
-      colname <- paste(direction, type, i, sep = "")
-
-      veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(veg_raster, shade_coords, list = TRUE)))
+      colname <- paste(direction, type, "VZ", which(dist_list == i), sep = "")
+      if(type == "dens"){
+        veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(veg_raster, shade_coords, list = TRUE))/100)
+      }
+      else{
+        veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(veg_raster, shade_coords, list = TRUE)))
+      }
+      
+      
     }
   }
   message("Complete")
@@ -742,50 +750,13 @@ copy_BFW <- function(points, bfw_table){
     select(site_id, bfwidth, aspect)
 }
 
-
-#' Extracts the values of a grid using a multi-angle, multi-distance sampling 
-#' method from each input point. This is the same process as `star_sample()`, 
-#' but with parallel processing implemented to decrease processing time. 
-#' 
-#' @description 
-#' For every input point, extract the value at a given angle and distance away
-#' and place that value in a column within the input point data frame. This is
-#' done for every angle and distance combination. 
+#' Extracts the elevation value from a DEM and places it in a field named 'elevation'.
 #' 
 #' @param points Needs to be a dataframe of class "sf" containing point
 #' geometry. Points must be in projected in NAD Conus Albers (EPSG:5070).
 #'
-#' @param veg_raster Path to the raster file you will be using.
-#' 
-#' @param angle_list Vector containing the angles the sample points will be 
-#' generated at. Angles can be removed, but angles outside of the defaul 8 angles
-#' are not valid. 
-#' 
-#' @param dist_list Vector containing the sample point distances from the origin.
-#' 
-#' @param type The middle part of the column name. Vegetation hight is "hght,
-#' and vegetation cover is "cvr". Default value is "hght".
-
-star_sample_parallel <- function(input_points, input_raster, angles, distances, output_type = "hght") {
-  
-  message("Extracting Raster Values")
-  sample_list <- mclapply(distances, function(x){
-     
-    star_sample_points <- star_sample(input_points, input_raster, angles, x, output_type)
-     
-  }, mc.cores = 4)
-  
-  
-  for(i in 2:length(sample_list)){
-    
-    sample_list[[1]] <- mutate(sample_list[[1]], sample_list[[i]])
-  }
-  
-  result <- sample_list[[1]]
-  
-  message("Complete")
-  return(result)
-}
+#' @param rpu_boundaries must be the provided dataframe of class sf that contains
+#' the boundaries of all RPUs and corresponding file names. 
 
 extract_elevation <- function(points, rpu_boundaries) {
   
@@ -823,109 +794,66 @@ extract_elevation <- function(points, rpu_boundaries) {
   return(output)
 }
 
-extract_ha_single <- function(layer_numbers, input_raster, input_points){
+#' Copies all values from a table and appends them to the input points. 
+#' 
+#' @description 
+#' Takes either an excel table or csv and matches the values based
+#' on NHDPlusIDt. Values are then appended on to your RShade points using the
+#' column names from the input table.
+#' 
+#' @param points Needs to be a dataframe of class "sf" containing point
+#' geometry. Points must be in projected in NAD Conus Albers (EPSG:5070).
+#' 
+#' @param lines the lines created by `read_nhdplus_lines()`. This is to match
+#' NHDPlusIDt to every point.
+#' 
+#' @param table Needs to be either a csv or xlsx. Must contain at least 
+#' one column called NHDPlusIDt containing the ID values as text. 
+
+
+copy_table <- function(points, lines, table){
   
-  if(layer_numbers == 1){
-    output <- mutate(input_points, topoNN = unlist(terra::extract(input_raster[[1]], st_coordinates(input_points), list = TRUE)))
+  message("Reading Table")
+  if(tools::file_ext(table) == "xls" | tools::file_ext(table) == "xlsx"){
+    message("Excel file detected")
+    join_table <- read_excel(table)
+  } else if(tools::file_ext(bfw_table) == "csv"){
+    message("CSV detected")
+    join_table <- read.csv(bfw_table,  colClasses=c("NHDPlusIDt"="character"))
+  } else{
+    stop("Failed to read table. File must be .xls, .xlsx, or .csv.")
   }
   
-  if(layer_numbers == 2){
-    output <- mutate(input_points, topoNE = unlist(terra::extract(input_raster[[2]], st_coordinates(input_points), list = TRUE)))
-  }
+  id_lines <- select(lines, NHDPlusIDt)
   
-  if(layer_numbers == 3){
-    output <- mutate(input_points, topoEE = unlist(terra::extract(input_raster[[3]], st_coordinates(input_points), list = TRUE)))
-  }
+  id_points <- join_points_lines(points, id_lines)
   
-  if(layer_numbers == 4){
-    output <- mutate(input_points, topoSE = unlist(terra::extract(input_raster[[4]], st_coordinates(input_points), list = TRUE)))
-  }
-  
-  if(layer_numbers == 5){
-    output <- mutate(input_points, topoSS = unlist(terra::extract(input_raster[[5]], st_coordinates(input_points), list = TRUE)))
-  }
-  
-  if(layer_numbers == 6){
-    output <- mutate(input_points, topoSW = unlist(terra::extract(input_raster[[6]], st_coordinates(input_points), list = TRUE)))
-  }
-  
-  if(layer_numbers == 7){
-    output <- mutate(input_points, topoWW = unlist(terra::extract(input_raster[[7]], st_coordinates(input_points), list = TRUE)))
-  }
-  
-  if(layer_numbers == 8){
-    output <- mutate(input_points, topoNW = unlist(terra::extract(input_raster[[8]], st_coordinates(input_points), list = TRUE)))
-  }
+  output <- merge(id_points, join_table, "NHDPlusIDt", all.x = TRUE) %>%
+    subset(select = -(NHDPlusIDt))
   
   return(output)
+  
 }
 
-extract_horizon_angle_parallel <- function(points, rpu_boundaries) {
+#' Calculates additional columns that are needed to be processed in RShade 
+#' 
+#' @description Some additional fields are needed for RShade processing. These
+#' fields are either static values or are calculated based on other fields. 
+
+finalize_cols <- function(points){
   
-  message("Fetching Raster Datasets")
-  rpu <- st_filter(rpu_boundaries, points)
-  
-  raster_list <- rpu$FILE
-  
-  for(i in raster_list){
-    
-    if(file.exists(paste("data/HorizonAngle/", i, sep = "")) == FALSE){
-      s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/HorizonAngle/", i, sep = "")
-      Sys.setenv(HA = s3_path)
-      system("./shell/get_ha.sh")
-    }
-  }
-  
-  
-  ha_raster <- rast(paste("data/HorizonAngle/", raster_list[1], sep = ""))
-  
-  layer_num <- 1:8
-  
-  message("Extracting Elevation Values")
-  
-  ha_output_list <- mclapply(layer_num, extract_ha_single, input_raster = ha_raster, input_points = points, mc.cores = 4)
-  
-  for(i in 2:length(ha_output_list)){
-    ha_output_list[[1]] <- mutate(ha_output_list[[1]], ha_output_list[[i]])
-  }
-  
-  output <- ha_output_list[[1]]
-  
-  if (length(raster_list) > 1) {
-    for (i in 2:length(raster_list)) {
-      ha_raster <- rast(paste("data/HorizonAngle/", raster_list[i], sep = ""))
-      
-      message("Evaluating Additional Grids")
-      ha_output_list2 <- mclapply(layer_num, extract_ha_single, input_raster = ha_raster, input_points = points, mc.cores = 4)
-      
-      for(i in 2:length(ha_output_list2)){
-        ha_output_list2[[1]] <- mutate(ha_output_list2[[1]], ha_output_list2[[i]])
-      }
-      
-      output2 <- ha_output_list2[[1]]
-      
-      output$topoNN <- coalesce(output$topoNN, output2$topoNN)
-      output$topoNE <- coalesce(output$topoNE, output2$topoNE)
-      output$topoEE <- coalesce(output$topoEE, output2$topoEE)
-      output$topoSE <- coalesce(output$topoSE, output2$topoSE)
-      output$topoSS <- coalesce(output$topoSS, output2$topoSS)
-      output$topoSW <- coalesce(output$topoSW, output2$topoSW)
-      output$topoWW <- coalesce(output$topoWW, output2$topoWW)
-      output$topoNW <- coalesce(output$topoNW, output2$topoNW)
-      
-      output <- mutate(output,
-                       topoNN = case_when(topoNN < output2$topoNN ~ output2$topoNN, TRUE ~ topoNN),
-                       topoNE = case_when(topoNE < output2$topoNE ~ output2$topoNE, TRUE ~ topoNE),
-                       topoEE = case_when(topoEE < output2$topoEE ~ output2$topoEE, TRUE ~ topoEE),
-                       topoSE = case_when(topoSE < output2$topoSE ~ output2$topoSE, TRUE ~ topoSE),
-                       topoSS = case_when(topoSS < output2$topoSS ~ output2$topoSS, TRUE ~ topoSS),
-                       topoSW = case_when(topoSW < output2$topoSW ~ output2$topoSW, TRUE ~ topoSW),
-                       topoWW = case_when(topoWW < output2$topoWW ~ output2$topoWW, TRUE ~ topoWW),
-                       topoNW = case_when(topoNW < output2$topoNW ~ output2$topoNW, TRUE ~ topoNW)
-      )
-    }
-  }
-  
-  message("Horizon Angle Extraction Complete")
+  output <- mutate(points,
+                   NNovrhng := NNhghtVZ1/10,
+                   NEovrhng := NEhghtVZ1/10,
+                   EEovrhng := EEhghtVZ1/10,
+                   SEovrhng := SEhghtVZ1/10,
+                   SSovrhng := SShghtVZ1/10,
+                   SWovrhng := SWhghtVZ1/10,
+                   WWovrhng := WWhghtVZ1/10,
+                   NWovrhng := NWhghtVZ1/10,
+                   wwidth = bfwidth, 
+                   disfromcentertolb = (bfwidth/2), 
+                   incision = 0)
+  message("Complete")
   return(output)
 }
