@@ -268,21 +268,29 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
       message("Getting River Lines")
       river_lines <- suppressWarnings(get_river_lines(gdb_path, nhdplus_lines))
       
-      message("Generating Aspects of Line Segments")
-      split_lines <- suppressWarnings(stdh_cast_substring(river_lines, to = "LINESTRING")) %>%
-        asp_all()
+      if(nrow(river_lines) == 0){
+        message("Lines Do Not Intersect NHDArea Polygons")
+      }
+      else{
+        message("Generating Aspects of Line Segments")
+        split_lines <- suppressWarnings(stdh_cast_substring(river_lines, to = "LINESTRING")) %>%
+          asp_all()
+        
+        message("Generating Transect Endpoints")
+        aspect_points <- join_points_lines(shade_points, split_lines, left.join = FALSE)
+        
+        message("Creating Transect Lines and Calculating Width")
+        transect <- create_transect(aspect_points) %>%
+          calc_transect_width(gdb_path)
+        
+        output$bfwidth[match(transect$site_id, output$site_id)] <- transect$bfwidth
+        
+        output$aspect[match(transect$site_id, output$site_id)] <- transect$aspect
+      }
+        
+      }
       
-      message("Generating Transect Endpoints")
-      aspect_points <- join_points_lines(shade_points, split_lines, left.join = FALSE)
-      
-      message("Creating Transect Lines and Calculating Width")
-      transect <- create_transect(aspect_points) %>%
-        calc_transect_width(gdb_path)
-      
-      output$bfwidth[match(transect$site_id, output$site_id)] <- transect$bfwidth
-      
-      output$aspect[match(transect$site_id, output$site_id)] <- transect$aspect
-    }
+     
     
     message("Bankfull Wideth Calculation Complete")
     
@@ -553,7 +561,7 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
     if(file.exists(paste("data/HorizonAngle/", i, sep = "")) == FALSE){
       s3_path <- paste("s3://dmap-epa-prod-anotedata/RShade/Rounded/HorizonAngle/", i, sep = "")
       Sys.setenv(HA = s3_path)
-      system("./get_ha.sh")
+      system("./shell/get_ha.sh")
     
    }
   }

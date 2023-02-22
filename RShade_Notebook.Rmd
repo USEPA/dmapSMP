@@ -10,7 +10,7 @@ Start by setting the parameters for running RShade.
 # If you are using a shapefile, the input_lines_feature_name can be left as is, 
 # as it will be ignored by the code. 
 
-input_lines <- "data/UR_NHDHR_lines_empty_atttable.shp"
+input_lines <- "~/shared/RShade/trimmed_17100307.shp"
 
 input_lines_feature_name <- "NHDFlowline"
 
