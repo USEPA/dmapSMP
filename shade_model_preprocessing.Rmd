@@ -52,7 +52,7 @@ downloads the required files.
 
 ```{r}
 source("R/initialize.R")
-source("R/Shade Model Prepreocessing.R")
+source("R/shade_model_preprocessing.R")
 ```
 
 This step imports your NHDPlus HR lines, retrieves the correct columns, and 

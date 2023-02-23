@@ -285,146 +285,282 @@ external_BFW_table &lt;- FALSE</code></pre>
 <p>Next, run the initialization processes. If this is your first time running Shade Model Prepreocessing, this step may take a few minutes as it installs the required libraries and downloads the required files.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKFwiUi9pbml0aWFsaXplLlJcIilcbnNvdXJjZShcIlIvU2hhZGUgTW9kZWwgUHJlcHJlb2Nlc3NpbmcuUlwiKVxuYGBgIn0= -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKFwiUi9pbml0aWFsaXplLlJcIilcbnNvdXJjZShcIlIvc2hhZGVfbW9kZWxfcHJlcHJvY2Vzc2luZy5SXCIpXG5gYGAifQ== -->
 <pre class="r"><code>source(&quot;R/initialize.R&quot;)
-source(&quot;R/Shade Model Prepreocessing.R&quot;)</code></pre>
+source(&quot;R/shade_model_preprocessing.R&quot;)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <p>This step imports your NHDPlus HR lines, retrieves the correct columns, and gets is into the correct coordinate system.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubmhkcl9saW5lcyA8LSByZWFkX25oZHBsdXNfbGluZXMoaW5wdXRfbGluZXMsIGlucHV0X2xpbmVzX2ZlYXR1cmVfbmFtZSlcbmBgYCJ9 -->
-<pre class="r"><code>nhdr_lines &lt;- read_nhdplus_lines(input_lines, input_lines_feature_name)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>This step generates sample points at 50 meter intervals along your input dataset. Keep in mind the output changes each time this is run. This may take a few minutes, especially if your input dataset is large.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2hhZGVfcG9pbnRzIDwtIHNhbXBsZV9zaGFkZV9wb2ludHMobmhkcl9saW5lcywgc2FtcGxlX3BvaW50X2Rpc3RhbmNlKVxuYGBgIn0= -->
-<pre class="r"><code>shade_points &lt;- sample_shade_points(nhdr_lines, sample_point_distance)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>This step calculates the bankfull width (BFW) of each shade point. By default, this function will start by using a mathematical equation to calculate BFW and then move on to checking for available river/stream boundary polygons and measuring the BFW of applicable shade points using the length of perpendicular transects of these polygons. If you wish to only use the equation, set “use.transect” to FALSE.</p>
-<p>This step downloads one or more geodatabases, and may take a few minutes.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBjYWxjX0JGVyhzaGFkZV9wb2ludHMsIG5oZHJfbGluZXMsIGhsciwgZXh0ZXJuYWxfQkZXX3RhYmxlLCB1c2UudHJhbnNlY3QgPSBUUlVFKVxuYGBgIn0= -->
-<pre class="r"><code>RShade_points &lt;- calc_BFW(shade_points, nhdr_lines, hlr, external_BFW_table, use.transect = TRUE)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>This step adds and populates latitude and longitude fields.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBhZGRfbGF0bG9uKFJTaGFkZV9wb2ludHMpXG5gYGAifQ== -->
-<pre class="r"><code>RShade_points &lt;- add_latlon(RShade_points)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>This step retrieves the elevation in meters from an input raster at each point and puts those values in the elevation field. This step involves downloading what could be a fairly large raster dataset, which could take a few minutes. Each raster only needs to be downloaded the first time it is used.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBleHRyYWN0X2VsZXZhdGlvbihSU2hhZGVfcG9pbnRzLCBycHVfYm91bmRhcmllcylcbmBgYCJ9 -->
-<pre class="r"><code>RShade_points &lt;- extract_elevation(RShade_points, rpu_boundaries)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>This step retrieves the values of an input raster stack at each point and puts those values in the correct fields. This step involves downloading what could be a fairly large raster dataset, which could take a few minutes. Each raster only needs to be downloaded the first time it is used.</p>
-<p>If you are using a your own horizon angle dataset, it must be in the following format: Band 1: 0-degrees Horizon Angle Band 2: 45-degrees Horizon Angle Band 3: 90-degrees Horizon Angle Band 4: 135-degrees Horizon Angle Band 5: 180-degrees Horizon Angle Band 6: 225-degrees Horizon Angle Band 7: 270-degrees Horizon Angle Band 8: 315-degrees Horizon Angle</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBleHRyYWN0X2hvcml6b25fYW5nbGUoUlNoYWRlX3BvaW50cywgcnB1X2JvdW5kYXJpZXMpXG5gYGAifQ== -->
-<pre class="r"><code>RShade_points &lt;- extract_horizon_angle(RShade_points, rpu_boundaries)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>The next two steps extract vegetation cover and height values from the resampled Landfire grids. The more angles and distances sampled, the longer these steps will take.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfaGVpZ2h0LCBzdGFyX3NhbXBsZV9hbmdsZXMsIHN0YXJfc2FtcGxlX2Rpc3RhbmNlcywgdHlwZT1cImhnaHRcIilcbmBgYCJ9 -->
-<pre class="r"><code>RShade_points &lt;- star_sample(RShade_points, veg_height, star_sample_angles, star_sample_distances, type=&quot;hght&quot;)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPVwiZGVuc1wiKVxuYGBgIn0= -->
-<pre class="r"><code>RShade_points &lt;- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type=&quot;dens&quot;)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>The final step calculates additional columns that are needed for processing in RShade. This is done at the end because many of the columns are based on other columns that were calculated as a part of Shade Model Prepreocessing.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuUlNoYWRlX3BvaW50cyA8LSBmaW5hbGl6ZV9jb2xzKFJTaGFkZV9wb2ludHMpXG5gYGAifQ== -->
-<pre class="r"><code>RShade_points &lt;- finalize_cols(RShade_points)</code></pre>
-<!-- rnb-source-end -->
-<!-- rnb-chunk-end -->
-<!-- rnb-text-begin -->
-<p>If you have additional columns you want to add to the output, you can upload a table that contains the columns you want to include along with a text field containing ID values called NDHPlusIDt. Edit the block below to include the path to the excel or csv.</p>
-<!-- rnb-text-end -->
-<!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuYWRkaXRpb25hbF90YWJsZSA8LSBcXGRhdGEvVGVzdF90YWJsZS54bHN4XFxcblxuUlNoYWRlX3BvaW50cyA8LSBjb3B5X3RhYmxlKFJTaGFkZV9wb2ludHMsIG5oZHJfbGluZXMsIGFkZGl0aW9uYWxfdGFibGUpXG5gYGBcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxubmhkcl9saW5lcyA8LSByZWFkX25oZHBsdXNfbGluZXMoaW5wdXRfbGluZXMsIGlucHV0X2xpbmVzX2ZlYXR1cmVfbmFtZSlcbmBgYFxuYGBgIn0= -->
 <pre class="r"><code>```r
+nhdr_lines &lt;- read_nhdplus_lines(input_lines, input_lines_feature_name)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+This step generates sample points at 50 meter intervals along your input dataset.
+Keep in mind the output changes each time this is run. This may take a few minutes,
+especially if your input dataset is large.
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuc2hhZGVfcG9pbnRzIDwtIHNhbXBsZV9zaGFkZV9wb2ludHMobmhkcl9saW5lcywgc2FtcGxlX3BvaW50X2Rpc3RhbmNlKVxuYGBgXG5gYGAifQ== --&gt;
+
+```r
+```r
+shade_points &lt;- sample_shade_points(nhdr_lines, sample_point_distance)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+This step calculates the bankfull width (BFW) of each shade point. By default, this 
+function will start by using a mathematical equation to calculate BFW and then
+move on to checking for available river/stream boundary polygons and measuring
+the BFW of applicable shade points using the length of perpendicular
+transects of these polygons. If you wish to only use the equation, set
+&quot;use.transect&quot; to FALSE.
+
+This step downloads one or more geodatabases, and may take a few minutes.
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBjYWxjX0JGVyhzaGFkZV9wb2ludHMsIG5oZHJfbGluZXMsIGhsciwgZXh0ZXJuYWxfQkZXX3RhYmxlLCB1c2UudHJhbnNlY3QgPSBUUlVFKVxuYGBgXG5gYGAifQ== --&gt;
+
+```r
+```r
+RShade_points &lt;- calc_BFW(shade_points, nhdr_lines, hlr, external_BFW_table, use.transect = TRUE)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+This step adds and populates latitude and longitude fields.
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBhZGRfbGF0bG9uKFJTaGFkZV9wb2ludHMpXG5gYGBcbmBgYCJ9 --&gt;
+
+```r
+```r
+RShade_points &lt;- add_latlon(RShade_points)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+This step retrieves the elevation in meters from an input raster at each point and puts
+those values in the elevation field. This step involves downloading what could
+be a fairly large raster dataset, which could take a few minutes. Each raster only
+needs to be downloaded the first time it is used.
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBleHRyYWN0X2VsZXZhdGlvbihSU2hhZGVfcG9pbnRzLCBycHVfYm91bmRhcmllcylcbmBgYFxuYGBgIn0= --&gt;
+
+```r
+```r
+RShade_points &lt;- extract_elevation(RShade_points, rpu_boundaries)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+
+This step retrieves the values of an input raster stack at each point and puts
+those values in the correct fields. This step involves downloading what could
+be a fairly large raster dataset, which could take a few minutes. Each raster only
+needs to be downloaded the first time it is used. 
+
+If you are using a your own horizon angle dataset, it must be in the following format:
+Band 1: 0-degrees Horizon Angle
+Band 2: 45-degrees Horizon Angle
+Band 3: 90-degrees Horizon Angle
+Band 4: 135-degrees Horizon Angle
+Band 5: 180-degrees Horizon Angle
+Band 6: 225-degrees Horizon Angle
+Band 7: 270-degrees Horizon Angle
+Band 8: 315-degrees Horizon Angle
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBleHRyYWN0X2hvcml6b25fYW5nbGUoUlNoYWRlX3BvaW50cywgcnB1X2JvdW5kYXJpZXMpXG5gYGBcbmBgYCJ9 --&gt;
+
+```r
+```r
+RShade_points &lt;- extract_horizon_angle(RShade_points, rpu_boundaries)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+The next two steps extract vegetation cover and height values from the resampled
+Landfire grids. The more angles and distances sampled, the longer these steps 
+will take. 
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfaGVpZ2h0LCBzdGFyX3NhbXBsZV9hbmdsZXMsIHN0YXJfc2FtcGxlX2Rpc3RhbmNlcywgdHlwZT1cXGhnaHRcXClcbmBgYFxuYGBgIn0= --&gt;
+
+```r
+```r
+RShade_points &lt;- star_sample(RShade_points, veg_height, star_sample_angles, star_sample_distances, type=\hght\)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPVxcZGVuc1xcKVxuYGBgXG5gYGAifQ== --&gt;
+
+```r
+```r
+RShade_points &lt;- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type=\dens\)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+The final step calculates additional columns that are needed for processing in 
+RShade. This is done at the end because many of the columns are based on other
+columns that were calculated as a part of Shade Model Prepreocessing. 
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuUlNoYWRlX3BvaW50cyA8LSBmaW5hbGl6ZV9jb2xzKFJTaGFkZV9wb2ludHMpXG5gYGBcbmBgYCJ9 --&gt;
+
+```r
+```r
+RShade_points &lt;- finalize_cols(RShade_points)</code></pre>
+<pre><code>
+&lt;!-- rnb-source-end --&gt;
+
+&lt;!-- rnb-chunk-end --&gt;
+
+
+&lt;!-- rnb-text-begin --&gt;
+
+
+
+If you have additional columns you want to add to the output, you can upload a
+table that contains the columns you want to include along with a text field 
+containing ID values called NDHPlusIDt. Edit the block below to include the path
+to the excel or csv.
+
+
+&lt;!-- rnb-text-end --&gt;
+
+
+&lt;!-- rnb-chunk-begin --&gt;
+
+
+&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuYGBgclxuYWRkaXRpb25hbF90YWJsZSA8LSBcXGRhdGEvVGVzdF90YWJsZS54bHN4XFxcblxuUlNoYWRlX3BvaW50cyA8LSBjb3B5X3RhYmxlKFJTaGFkZV9wb2ludHMsIG5oZHJfbGluZXMsIGFkZGl0aW9uYWxfdGFibGUpXG5gYGBcbmBgYFxuYGBgIn0= --&gt;
+
+```r
+```r
+```r
 additional_table &lt;- \data/Test_table.xlsx\
 
 RShade_points &lt;- copy_table(RShade_points, nhdr_lines, additional_table)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-The final optional steps allow you to export the final result as either a .csv or 
-shapefile. These can then be downloaded from the &quot;Files&quot; window.
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuc3Rfd3JpdGUoUlNoYWRlX3BvaW50cywgXFxkYXRhL091dHB1dC5zaHBcXClcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-st_write(RShade_points, \data/Output.shp\)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxud3JpdGVfY3N2KFJTaGFkZV9wb2ludHMsIFxcZGF0YS9PdXRwdXQuY3N2XFwpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-write_csv(RShade_points, \data/Output.csv\)</code></pre>
-<p>```</p>
+<pre><code></code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>The final optional steps allow you to export the final result as either a .csv or shapefile. These can then be downloaded from the “Files” window.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3Rfd3JpdGUoUlNoYWRlX3BvaW50cywgXCJkYXRhL091dHB1dC5zaHBcIilcbmBgYCJ9 -->
+<pre class="r"><code>st_write(RShade_points, &quot;data/Output.shp&quot;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud3JpdGVfY3N2KFJTaGFkZV9wb2ludHMsIFwiZGF0YS9PdXRwdXQuY3N2XCIpXG5gYGAifQ== -->
+<pre class="r"><code>write_csv(RShade_points, &quot;data/Output.csv&quot;)</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKU3RhcnQgYnkgc2V0dGluZyB0aGUgcGFyYW1ldGVycyBmb3IgcnVubmluZyBTaGFkZSBNb2RlbCBQcmVwcm9jZXNzaW5nCgpgYGB7cn0KIyBJbnB1dCBsaW5lcyBjYW4gY29tZSBmcm9tIGVpdGhlciBhIHNoYXBlZmlsZSBvciBmaWxlIGdlb2RhdGFiYXNlLgojIElmIHlvdSBhcmUgdXNpbmcgYSBzaGFwZWZpbGUsIHRoZSBpbnB1dF9saW5lc19mZWF0dXJlX25hbWUgY2FuIGJlIGxlZnQgYXMgaXMsIAojIGFzIGl0IHdpbGwgYmUgaWdub3JlZCBieSB0aGUgY29kZS4gCgppbnB1dF9saW5lcyA8LSAifi9zaGFyZWQvUlNoYWRlL3RyaW1tZWRfMTcxMDAzMDcuc2hwIgoKaW5wdXRfbGluZXNfZmVhdHVyZV9uYW1lIDwtICJOSERGbG93bGluZSIKCnNhbXBsZV9wb2ludF9kaXN0YW5jZSA8LSA1MAoKIyBTYW1wbGUgYW5nbGVzIGNhbiBvbmx5IGNvbnRhaW4gdGhlIGFuZ2xlcyAwLCA0NSwgMTM1LCAxODAsIDIyNSwgMjcwLCAzMTUuIAojIFZhbHVlcyBjYW4gYmUgcmVtb3ZlZCwgYnV0IG5ldyB2YWx1ZXMgY2Fubm90IGJlIGFkZGVkCgpzdGFyX3NhbXBsZV9hbmdsZXMgPC0gYygwLCA0NSwgOTAsIDEzNSwgMTgwLCAyMjUsIDI3MCwgMzE1KQoKIyBEaXN0YW5jZXMgYXJlIGluIG1ldGVycwoKc3Rhcl9zYW1wbGVfZGlzdGFuY2VzIDwtIGMoMywgNiwgOSwgMTIsIDE1LCAxOCwgMjEsIDI0LCAyNywgMzAsIDMzLCAzNiwgMzkpCgojIElmIHlvdSB3aXNoIHRvIHVzZSB0aGUgcHJvdmlkZWQgZ3JpZHMgZm9yIGhvcml6b24gYW5nbGUsIHZlZ2V0YXRpb24gY292ZXIsIGFuZCAKIyB2ZWdldGF0aW9uIGhlaWdodCwgc2V0IHRoZSB2YWxlcyBiZWxvdyB0byBGQUxTRS4gT3RoZXJ3aXNlLCBwb3B1bGF0ZSB3aXRoIHRoZQojIGZpbGUgcGF0aCAiZGF0YS95b3VyR3JpZC50aWYiLgoKZXh0ZXJuYWxfaG9yaXpvbl9hbmdsZSA8LSBGQUxTRQoKZXh0ZXJuYWxfdmVnX2NvdmVyIDwtIEZBTFNFCgpleHRlcm5hbF92ZWdfaGVpZ2h0IDwtIEZBTFNFCgojIElmIHlvdSB3aXNoIGZvciB0byBwcm92aWRlIHlvdXIgb3duIHRhYmxlIGNvbnRhaW5pbmcgQkZXIGNhbGN1bGF0aW9ucywgcmVwbGFjZSAKIyB0aGUgRkFMU0UgdmFsdWUgb2YgZXh0ZXJuYWxfQkZXX3RhYmxlIHdpdGggYSBwYXRoIHRvIHlvdXIgY3N2IG9yIGV4Y2VsCiMgc3ByZWFkc2hlZXQgImRhdGEveW91ckJGVy54bHN4IiBvciAiZGF0YS95b3VyQkZXLmNzdiIuIAoKIyBUYWJsZSBNVVNUIGNvbnRhaW4gdGhlIGZpZWxkcyAiTkhEUGx1c0lEdCIgKE5IRFBsdXNJRCBhcyB0ZXh0KSBhbmQgImJmd2lkdGgiLgojIFdoZW4gdXNpbmcgYSBjc3YsIGVuc3VyZSB0aGF0IHRoZSBOSERQbHVzSUR0IGZpZWxkIHNhdmVkIGFzIHRoZSBmdWxsIElEIGFuZCBub3QKIyBhIHNjaWVudGlmaWMgbm90YXRpb24gbnVtYmVyLiAKCmV4dGVybmFsX0JGV190YWJsZSA8LSBGQUxTRQpgYGAKCk5leHQsIHJ1biB0aGUgaW5pdGlhbGl6YXRpb24gcHJvY2Vzc2VzLiBJZiB0aGlzIGlzIHlvdXIgZmlyc3QgdGltZSBydW5uaW5nIFNoYWRlIE1vZGVsIFByZXByZW9jZXNzaW5nLAp0aGlzIHN0ZXAgbWF5IHRha2UgYSBmZXcgbWludXRlcyBhcyBpdCBpbnN0YWxscyB0aGUgcmVxdWlyZWQgbGlicmFyaWVzIGFuZApkb3dubG9hZHMgdGhlIHJlcXVpcmVkIGZpbGVzLgoKYGBge3J9CnNvdXJjZSgiUi9pbml0aWFsaXplLlIiKQpzb3VyY2UoIlIvU2hhZGUgTW9kZWwgUHJlcHJlb2Nlc3NpbmcuUiIpCmBgYAoKVGhpcyBzdGVwIGltcG9ydHMgeW91ciBOSERQbHVzIEhSIGxpbmVzLCByZXRyaWV2ZXMgdGhlIGNvcnJlY3QgY29sdW1ucywgYW5kIApnZXRzIGlzIGludG8gdGhlIGNvcnJlY3QgY29vcmRpbmF0ZSBzeXN0ZW0uCgpgYGB7cn0Kbmhkcl9saW5lcyA8LSByZWFkX25oZHBsdXNfbGluZXMoaW5wdXRfbGluZXMsIGlucHV0X2xpbmVzX2ZlYXR1cmVfbmFtZSkKYGBgCgpUaGlzIHN0ZXAgZ2VuZXJhdGVzIHNhbXBsZSBwb2ludHMgYXQgNTAgbWV0ZXIgaW50ZXJ2YWxzIGFsb25nIHlvdXIgaW5wdXQgZGF0YXNldC4KS2VlcCBpbiBtaW5kIHRoZSBvdXRwdXQgY2hhbmdlcyBlYWNoIHRpbWUgdGhpcyBpcyBydW4uIFRoaXMgbWF5IHRha2UgYSBmZXcgbWludXRlcywKZXNwZWNpYWxseSBpZiB5b3VyIGlucHV0IGRhdGFzZXQgaXMgbGFyZ2UuCgpgYGB7cn0Kc2hhZGVfcG9pbnRzIDwtIHNhbXBsZV9zaGFkZV9wb2ludHMobmhkcl9saW5lcywgc2FtcGxlX3BvaW50X2Rpc3RhbmNlKQpgYGAKClRoaXMgc3RlcCBjYWxjdWxhdGVzIHRoZSBiYW5rZnVsbCB3aWR0aCAoQkZXKSBvZiBlYWNoIHNoYWRlIHBvaW50LiBCeSBkZWZhdWx0LCB0aGlzIApmdW5jdGlvbiB3aWxsIHN0YXJ0IGJ5IHVzaW5nIGEgbWF0aGVtYXRpY2FsIGVxdWF0aW9uIHRvIGNhbGN1bGF0ZSBCRlcgYW5kIHRoZW4KbW92ZSBvbiB0byBjaGVja2luZyBmb3IgYXZhaWxhYmxlIHJpdmVyL3N0cmVhbSBib3VuZGFyeSBwb2x5Z29ucyBhbmQgbWVhc3VyaW5nCnRoZSBCRlcgb2YgYXBwbGljYWJsZSBzaGFkZSBwb2ludHMgdXNpbmcgdGhlIGxlbmd0aCBvZiBwZXJwZW5kaWN1bGFyCnRyYW5zZWN0cyBvZiB0aGVzZSBwb2x5Z29ucy4gSWYgeW91IHdpc2ggdG8gb25seSB1c2UgdGhlIGVxdWF0aW9uLCBzZXQKInVzZS50cmFuc2VjdCIgdG8gRkFMU0UuCgpUaGlzIHN0ZXAgZG93bmxvYWRzIG9uZSBvciBtb3JlIGdlb2RhdGFiYXNlcywgYW5kIG1heSB0YWtlIGEgZmV3IG1pbnV0ZXMuCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBjYWxjX0JGVyhzaGFkZV9wb2ludHMsIG5oZHJfbGluZXMsIGhsciwgZXh0ZXJuYWxfQkZXX3RhYmxlLCB1c2UudHJhbnNlY3QgPSBUUlVFKQpgYGAKClRoaXMgc3RlcCBhZGRzIGFuZCBwb3B1bGF0ZXMgbGF0aXR1ZGUgYW5kIGxvbmdpdHVkZSBmaWVsZHMuCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBhZGRfbGF0bG9uKFJTaGFkZV9wb2ludHMpCmBgYAoKVGhpcyBzdGVwIHJldHJpZXZlcyB0aGUgZWxldmF0aW9uIGluIG1ldGVycyBmcm9tIGFuIGlucHV0IHJhc3RlciBhdCBlYWNoIHBvaW50IGFuZCBwdXRzCnRob3NlIHZhbHVlcyBpbiB0aGUgZWxldmF0aW9uIGZpZWxkLiBUaGlzIHN0ZXAgaW52b2x2ZXMgZG93bmxvYWRpbmcgd2hhdCBjb3VsZApiZSBhIGZhaXJseSBsYXJnZSByYXN0ZXIgZGF0YXNldCwgd2hpY2ggY291bGQgdGFrZSBhIGZldyBtaW51dGVzLiBFYWNoIHJhc3RlciBvbmx5Cm5lZWRzIHRvIGJlIGRvd25sb2FkZWQgdGhlIGZpcnN0IHRpbWUgaXQgaXMgdXNlZC4KCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIGV4dHJhY3RfZWxldmF0aW9uKFJTaGFkZV9wb2ludHMsIHJwdV9ib3VuZGFyaWVzKQpgYGAKCgpUaGlzIHN0ZXAgcmV0cmlldmVzIHRoZSB2YWx1ZXMgb2YgYW4gaW5wdXQgcmFzdGVyIHN0YWNrIGF0IGVhY2ggcG9pbnQgYW5kIHB1dHMKdGhvc2UgdmFsdWVzIGluIHRoZSBjb3JyZWN0IGZpZWxkcy4gVGhpcyBzdGVwIGludm9sdmVzIGRvd25sb2FkaW5nIHdoYXQgY291bGQKYmUgYSBmYWlybHkgbGFyZ2UgcmFzdGVyIGRhdGFzZXQsIHdoaWNoIGNvdWxkIHRha2UgYSBmZXcgbWludXRlcy4gRWFjaCByYXN0ZXIgb25seQpuZWVkcyB0byBiZSBkb3dubG9hZGVkIHRoZSBmaXJzdCB0aW1lIGl0IGlzIHVzZWQuIAoKSWYgeW91IGFyZSB1c2luZyBhIHlvdXIgb3duIGhvcml6b24gYW5nbGUgZGF0YXNldCwgaXQgbXVzdCBiZSBpbiB0aGUgZm9sbG93aW5nIGZvcm1hdDoKQmFuZCAxOiAwLWRlZ3JlZXMgSG9yaXpvbiBBbmdsZQpCYW5kIDI6IDQ1LWRlZ3JlZXMgSG9yaXpvbiBBbmdsZQpCYW5kIDM6IDkwLWRlZ3JlZXMgSG9yaXpvbiBBbmdsZQpCYW5kIDQ6IDEzNS1kZWdyZWVzIEhvcml6b24gQW5nbGUKQmFuZCA1OiAxODAtZGVncmVlcyBIb3Jpem9uIEFuZ2xlCkJhbmQgNjogMjI1LWRlZ3JlZXMgSG9yaXpvbiBBbmdsZQpCYW5kIDc6IDI3MC1kZWdyZWVzIEhvcml6b24gQW5nbGUKQmFuZCA4OiAzMTUtZGVncmVlcyBIb3Jpem9uIEFuZ2xlCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBleHRyYWN0X2hvcml6b25fYW5nbGUoUlNoYWRlX3BvaW50cywgcnB1X2JvdW5kYXJpZXMpCmBgYAoKVGhlIG5leHQgdHdvIHN0ZXBzIGV4dHJhY3QgdmVnZXRhdGlvbiBjb3ZlciBhbmQgaGVpZ2h0IHZhbHVlcyBmcm9tIHRoZSByZXNhbXBsZWQKTGFuZGZpcmUgZ3JpZHMuIFRoZSBtb3JlIGFuZ2xlcyBhbmQgZGlzdGFuY2VzIHNhbXBsZWQsIHRoZSBsb25nZXIgdGhlc2Ugc3RlcHMgCndpbGwgdGFrZS4gCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfaGVpZ2h0LCBzdGFyX3NhbXBsZV9hbmdsZXMsIHN0YXJfc2FtcGxlX2Rpc3RhbmNlcywgdHlwZT0iaGdodCIpCmBgYAoKYGBge3J9ClJTaGFkZV9wb2ludHMgPC0gc3Rhcl9zYW1wbGUoUlNoYWRlX3BvaW50cywgdmVnX2NvdmVyLCBzdGFyX3NhbXBsZV9hbmdsZXMsIHN0YXJfc2FtcGxlX2Rpc3RhbmNlcywgdHlwZT0iZGVucyIpCmBgYAoKVGhlIGZpbmFsIHN0ZXAgY2FsY3VsYXRlcyBhZGRpdGlvbmFsIGNvbHVtbnMgdGhhdCBhcmUgbmVlZGVkIGZvciBwcm9jZXNzaW5nIGluIApSU2hhZGUuIFRoaXMgaXMgZG9uZSBhdCB0aGUgZW5kIGJlY2F1c2UgbWFueSBvZiB0aGUgY29sdW1ucyBhcmUgYmFzZWQgb24gb3RoZXIKY29sdW1ucyB0aGF0IHdlcmUgY2FsY3VsYXRlZCBhcyBhIHBhcnQgb2YgU2hhZGUgTW9kZWwgUHJlcHJlb2Nlc3NpbmcuIAoKYGBge3J9ClJTaGFkZV9wb2ludHMgPC0gZmluYWxpemVfY29scyhSU2hhZGVfcG9pbnRzKQpgYGAKCgpJZiB5b3UgaGF2ZSBhZGRpdGlvbmFsIGNvbHVtbnMgeW91IHdhbnQgdG8gYWRkIHRvIHRoZSBvdXRwdXQsIHlvdSBjYW4gdXBsb2FkIGEKdGFibGUgdGhhdCBjb250YWlucyB0aGUgY29sdW1ucyB5b3Ugd2FudCB0byBpbmNsdWRlIGFsb25nIHdpdGggYSB0ZXh0IGZpZWxkIApjb250YWluaW5nIElEIHZhbHVlcyBjYWxsZWQgTkRIUGx1c0lEdC4gRWRpdCB0aGUgYmxvY2sgYmVsb3cgdG8gaW5jbHVkZSB0aGUgcGF0aAp0byB0aGUgZXhjZWwgb3IgY3N2LgoKYGBge3J9CmFkZGl0aW9uYWxfdGFibGUgPC0gImRhdGEvVGVzdF90YWJsZS54bHN4IgoKUlNoYWRlX3BvaW50cyA8LSBjb3B5X3RhYmxlKFJTaGFkZV9wb2ludHMsIG5oZHJfbGluZXMsIGFkZGl0aW9uYWxfdGFibGUpCmBgYAoKClRoZSBmaW5hbCBvcHRpb25hbCBzdGVwcyBhbGxvdyB5b3UgdG8gZXhwb3J0IHRoZSBmaW5hbCByZXN1bHQgYXMgZWl0aGVyIGEgLmNzdiBvciAKc2hhcGVmaWxlLiBUaGVzZSBjYW4gdGhlbiBiZSBkb3dubG9hZGVkIGZyb20gdGhlICJGaWxlcyIgd2luZG93LgoKYGBge3J9CnN0X3dyaXRlKFJTaGFkZV9wb2ludHMsICJkYXRhL091dHB1dC5zaHAiKQpgYGAKCmBgYHtyfQp3cml0ZV9jc3YoUlNoYWRlX3BvaW50cywgImRhdGEvT3V0cHV0LmNzdiIpCmBgYAoK</div>
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKU3RhcnQgYnkgc2V0dGluZyB0aGUgcGFyYW1ldGVycyBmb3IgcnVubmluZyBTaGFkZSBNb2RlbCBQcmVwcm9jZXNzaW5nCgpgYGB7cn0KIyBJbnB1dCBsaW5lcyBjYW4gY29tZSBmcm9tIGVpdGhlciBhIHNoYXBlZmlsZSBvciBmaWxlIGdlb2RhdGFiYXNlLgojIElmIHlvdSBhcmUgdXNpbmcgYSBzaGFwZWZpbGUsIHRoZSBpbnB1dF9saW5lc19mZWF0dXJlX25hbWUgY2FuIGJlIGxlZnQgYXMgaXMsIAojIGFzIGl0IHdpbGwgYmUgaWdub3JlZCBieSB0aGUgY29kZS4gCgppbnB1dF9saW5lcyA8LSAifi9zaGFyZWQvUlNoYWRlL3RyaW1tZWRfMTcxMDAzMDcuc2hwIgoKaW5wdXRfbGluZXNfZmVhdHVyZV9uYW1lIDwtICJOSERGbG93bGluZSIKCnNhbXBsZV9wb2ludF9kaXN0YW5jZSA8LSA1MAoKIyBTYW1wbGUgYW5nbGVzIGNhbiBvbmx5IGNvbnRhaW4gdGhlIGFuZ2xlcyAwLCA0NSwgMTM1LCAxODAsIDIyNSwgMjcwLCAzMTUuIAojIFZhbHVlcyBjYW4gYmUgcmVtb3ZlZCwgYnV0IG5ldyB2YWx1ZXMgY2Fubm90IGJlIGFkZGVkCgpzdGFyX3NhbXBsZV9hbmdsZXMgPC0gYygwLCA0NSwgOTAsIDEzNSwgMTgwLCAyMjUsIDI3MCwgMzE1KQoKIyBEaXN0YW5jZXMgYXJlIGluIG1ldGVycwoKc3Rhcl9zYW1wbGVfZGlzdGFuY2VzIDwtIGMoMywgNiwgOSwgMTIsIDE1LCAxOCwgMjEsIDI0LCAyNywgMzAsIDMzLCAzNiwgMzkpCgojIElmIHlvdSB3aXNoIHRvIHVzZSB0aGUgcHJvdmlkZWQgZ3JpZHMgZm9yIGhvcml6b24gYW5nbGUsIHZlZ2V0YXRpb24gY292ZXIsIGFuZCAKIyB2ZWdldGF0aW9uIGhlaWdodCwgc2V0IHRoZSB2YWxlcyBiZWxvdyB0byBGQUxTRS4gT3RoZXJ3aXNlLCBwb3B1bGF0ZSB3aXRoIHRoZQojIGZpbGUgcGF0aCAiZGF0YS95b3VyR3JpZC50aWYiLgoKZXh0ZXJuYWxfaG9yaXpvbl9hbmdsZSA8LSBGQUxTRQoKZXh0ZXJuYWxfdmVnX2NvdmVyIDwtIEZBTFNFCgpleHRlcm5hbF92ZWdfaGVpZ2h0IDwtIEZBTFNFCgojIElmIHlvdSB3aXNoIGZvciB0byBwcm92aWRlIHlvdXIgb3duIHRhYmxlIGNvbnRhaW5pbmcgQkZXIGNhbGN1bGF0aW9ucywgcmVwbGFjZSAKIyB0aGUgRkFMU0UgdmFsdWUgb2YgZXh0ZXJuYWxfQkZXX3RhYmxlIHdpdGggYSBwYXRoIHRvIHlvdXIgY3N2IG9yIGV4Y2VsCiMgc3ByZWFkc2hlZXQgImRhdGEveW91ckJGVy54bHN4IiBvciAiZGF0YS95b3VyQkZXLmNzdiIuIAoKIyBUYWJsZSBNVVNUIGNvbnRhaW4gdGhlIGZpZWxkcyAiTkhEUGx1c0lEdCIgKE5IRFBsdXNJRCBhcyB0ZXh0KSBhbmQgImJmd2lkdGgiLgojIFdoZW4gdXNpbmcgYSBjc3YsIGVuc3VyZSB0aGF0IHRoZSBOSERQbHVzSUR0IGZpZWxkIHNhdmVkIGFzIHRoZSBmdWxsIElEIGFuZCBub3QKIyBhIHNjaWVudGlmaWMgbm90YXRpb24gbnVtYmVyLiAKCmV4dGVybmFsX0JGV190YWJsZSA8LSBGQUxTRQpgYGAKCk5leHQsIHJ1biB0aGUgaW5pdGlhbGl6YXRpb24gcHJvY2Vzc2VzLiBJZiB0aGlzIGlzIHlvdXIgZmlyc3QgdGltZSBydW5uaW5nIFNoYWRlIE1vZGVsIFByZXByZW9jZXNzaW5nLAp0aGlzIHN0ZXAgbWF5IHRha2UgYSBmZXcgbWludXRlcyBhcyBpdCBpbnN0YWxscyB0aGUgcmVxdWlyZWQgbGlicmFyaWVzIGFuZApkb3dubG9hZHMgdGhlIHJlcXVpcmVkIGZpbGVzLgoKYGBge3J9CnNvdXJjZSgiUi9pbml0aWFsaXplLlIiKQpzb3VyY2UoIlIvc2hhZGVfbW9kZWxfcHJlcHJvY2Vzc2luZy5SIikKYGBgCgpUaGlzIHN0ZXAgaW1wb3J0cyB5b3VyIE5IRFBsdXMgSFIgbGluZXMsIHJldHJpZXZlcyB0aGUgY29ycmVjdCBjb2x1bW5zLCBhbmQgCmdldHMgaXMgaW50byB0aGUgY29ycmVjdCBjb29yZGluYXRlIHN5c3RlbS4KCmBgYHtyfQpuaGRyX2xpbmVzIDwtIHJlYWRfbmhkcGx1c19saW5lcyhpbnB1dF9saW5lcywgaW5wdXRfbGluZXNfZmVhdHVyZV9uYW1lKQpgYGAKClRoaXMgc3RlcCBnZW5lcmF0ZXMgc2FtcGxlIHBvaW50cyBhdCA1MCBtZXRlciBpbnRlcnZhbHMgYWxvbmcgeW91ciBpbnB1dCBkYXRhc2V0LgpLZWVwIGluIG1pbmQgdGhlIG91dHB1dCBjaGFuZ2VzIGVhY2ggdGltZSB0aGlzIGlzIHJ1bi4gVGhpcyBtYXkgdGFrZSBhIGZldyBtaW51dGVzLAplc3BlY2lhbGx5IGlmIHlvdXIgaW5wdXQgZGF0YXNldCBpcyBsYXJnZS4KCmBgYHtyfQpzaGFkZV9wb2ludHMgPC0gc2FtcGxlX3NoYWRlX3BvaW50cyhuaGRyX2xpbmVzLCBzYW1wbGVfcG9pbnRfZGlzdGFuY2UpCmBgYAoKVGhpcyBzdGVwIGNhbGN1bGF0ZXMgdGhlIGJhbmtmdWxsIHdpZHRoIChCRlcpIG9mIGVhY2ggc2hhZGUgcG9pbnQuIEJ5IGRlZmF1bHQsIHRoaXMgCmZ1bmN0aW9uIHdpbGwgc3RhcnQgYnkgdXNpbmcgYSBtYXRoZW1hdGljYWwgZXF1YXRpb24gdG8gY2FsY3VsYXRlIEJGVyBhbmQgdGhlbgptb3ZlIG9uIHRvIGNoZWNraW5nIGZvciBhdmFpbGFibGUgcml2ZXIvc3RyZWFtIGJvdW5kYXJ5IHBvbHlnb25zIGFuZCBtZWFzdXJpbmcKdGhlIEJGVyBvZiBhcHBsaWNhYmxlIHNoYWRlIHBvaW50cyB1c2luZyB0aGUgbGVuZ3RoIG9mIHBlcnBlbmRpY3VsYXIKdHJhbnNlY3RzIG9mIHRoZXNlIHBvbHlnb25zLiBJZiB5b3Ugd2lzaCB0byBvbmx5IHVzZSB0aGUgZXF1YXRpb24sIHNldAoidXNlLnRyYW5zZWN0IiB0byBGQUxTRS4KClRoaXMgc3RlcCBkb3dubG9hZHMgb25lIG9yIG1vcmUgZ2VvZGF0YWJhc2VzLCBhbmQgbWF5IHRha2UgYSBmZXcgbWludXRlcy4KCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIGNhbGNfQkZXKHNoYWRlX3BvaW50cywgbmhkcl9saW5lcywgaGxyLCBleHRlcm5hbF9CRldfdGFibGUsIHVzZS50cmFuc2VjdCA9IFRSVUUpCmBgYAoKVGhpcyBzdGVwIGFkZHMgYW5kIHBvcHVsYXRlcyBsYXRpdHVkZSBhbmQgbG9uZ2l0dWRlIGZpZWxkcy4KCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIGFkZF9sYXRsb24oUlNoYWRlX3BvaW50cykKYGBgCgpUaGlzIHN0ZXAgcmV0cmlldmVzIHRoZSBlbGV2YXRpb24gaW4gbWV0ZXJzIGZyb20gYW4gaW5wdXQgcmFzdGVyIGF0IGVhY2ggcG9pbnQgYW5kIHB1dHMKdGhvc2UgdmFsdWVzIGluIHRoZSBlbGV2YXRpb24gZmllbGQuIFRoaXMgc3RlcCBpbnZvbHZlcyBkb3dubG9hZGluZyB3aGF0IGNvdWxkCmJlIGEgZmFpcmx5IGxhcmdlIHJhc3RlciBkYXRhc2V0LCB3aGljaCBjb3VsZCB0YWtlIGEgZmV3IG1pbnV0ZXMuIEVhY2ggcmFzdGVyIG9ubHkKbmVlZHMgdG8gYmUgZG93bmxvYWRlZCB0aGUgZmlyc3QgdGltZSBpdCBpcyB1c2VkLgoKYGBge3J9ClJTaGFkZV9wb2ludHMgPC0gZXh0cmFjdF9lbGV2YXRpb24oUlNoYWRlX3BvaW50cywgcnB1X2JvdW5kYXJpZXMpCmBgYAoKClRoaXMgc3RlcCByZXRyaWV2ZXMgdGhlIHZhbHVlcyBvZiBhbiBpbnB1dCByYXN0ZXIgc3RhY2sgYXQgZWFjaCBwb2ludCBhbmQgcHV0cwp0aG9zZSB2YWx1ZXMgaW4gdGhlIGNvcnJlY3QgZmllbGRzLiBUaGlzIHN0ZXAgaW52b2x2ZXMgZG93bmxvYWRpbmcgd2hhdCBjb3VsZApiZSBhIGZhaXJseSBsYXJnZSByYXN0ZXIgZGF0YXNldCwgd2hpY2ggY291bGQgdGFrZSBhIGZldyBtaW51dGVzLiBFYWNoIHJhc3RlciBvbmx5Cm5lZWRzIHRvIGJlIGRvd25sb2FkZWQgdGhlIGZpcnN0IHRpbWUgaXQgaXMgdXNlZC4gCgpJZiB5b3UgYXJlIHVzaW5nIGEgeW91ciBvd24gaG9yaXpvbiBhbmdsZSBkYXRhc2V0LCBpdCBtdXN0IGJlIGluIHRoZSBmb2xsb3dpbmcgZm9ybWF0OgpCYW5kIDE6IDAtZGVncmVlcyBIb3Jpem9uIEFuZ2xlCkJhbmQgMjogNDUtZGVncmVlcyBIb3Jpem9uIEFuZ2xlCkJhbmQgMzogOTAtZGVncmVlcyBIb3Jpem9uIEFuZ2xlCkJhbmQgNDogMTM1LWRlZ3JlZXMgSG9yaXpvbiBBbmdsZQpCYW5kIDU6IDE4MC1kZWdyZWVzIEhvcml6b24gQW5nbGUKQmFuZCA2OiAyMjUtZGVncmVlcyBIb3Jpem9uIEFuZ2xlCkJhbmQgNzogMjcwLWRlZ3JlZXMgSG9yaXpvbiBBbmdsZQpCYW5kIDg6IDMxNS1kZWdyZWVzIEhvcml6b24gQW5nbGUKCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIGV4dHJhY3RfaG9yaXpvbl9hbmdsZShSU2hhZGVfcG9pbnRzLCBycHVfYm91bmRhcmllcykKYGBgCgpUaGUgbmV4dCB0d28gc3RlcHMgZXh0cmFjdCB2ZWdldGF0aW9uIGNvdmVyIGFuZCBoZWlnaHQgdmFsdWVzIGZyb20gdGhlIHJlc2FtcGxlZApMYW5kZmlyZSBncmlkcy4gVGhlIG1vcmUgYW5nbGVzIGFuZCBkaXN0YW5jZXMgc2FtcGxlZCwgdGhlIGxvbmdlciB0aGVzZSBzdGVwcyAKd2lsbCB0YWtlLiAKCmBgYHtyfQpSU2hhZGVfcG9pbnRzIDwtIHN0YXJfc2FtcGxlKFJTaGFkZV9wb2ludHMsIHZlZ19oZWlnaHQsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPSJoZ2h0IikKYGBgCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBzdGFyX3NhbXBsZShSU2hhZGVfcG9pbnRzLCB2ZWdfY292ZXIsIHN0YXJfc2FtcGxlX2FuZ2xlcywgc3Rhcl9zYW1wbGVfZGlzdGFuY2VzLCB0eXBlPSJkZW5zIikKYGBgCgpUaGUgZmluYWwgc3RlcCBjYWxjdWxhdGVzIGFkZGl0aW9uYWwgY29sdW1ucyB0aGF0IGFyZSBuZWVkZWQgZm9yIHByb2Nlc3NpbmcgaW4gClJTaGFkZS4gVGhpcyBpcyBkb25lIGF0IHRoZSBlbmQgYmVjYXVzZSBtYW55IG9mIHRoZSBjb2x1bW5zIGFyZSBiYXNlZCBvbiBvdGhlcgpjb2x1bW5zIHRoYXQgd2VyZSBjYWxjdWxhdGVkIGFzIGEgcGFydCBvZiBTaGFkZSBNb2RlbCBQcmVwcmVvY2Vzc2luZy4gCgpgYGB7cn0KUlNoYWRlX3BvaW50cyA8LSBmaW5hbGl6ZV9jb2xzKFJTaGFkZV9wb2ludHMpCmBgYAoKCklmIHlvdSBoYXZlIGFkZGl0aW9uYWwgY29sdW1ucyB5b3Ugd2FudCB0byBhZGQgdG8gdGhlIG91dHB1dCwgeW91IGNhbiB1cGxvYWQgYQp0YWJsZSB0aGF0IGNvbnRhaW5zIHRoZSBjb2x1bW5zIHlvdSB3YW50IHRvIGluY2x1ZGUgYWxvbmcgd2l0aCBhIHRleHQgZmllbGQgCmNvbnRhaW5pbmcgSUQgdmFsdWVzIGNhbGxlZCBOREhQbHVzSUR0LiBFZGl0IHRoZSBibG9jayBiZWxvdyB0byBpbmNsdWRlIHRoZSBwYXRoCnRvIHRoZSBleGNlbCBvciBjc3YuCgpgYGB7cn0KYWRkaXRpb25hbF90YWJsZSA8LSAiZGF0YS9UZXN0X3RhYmxlLnhsc3giCgpSU2hhZGVfcG9pbnRzIDwtIGNvcHlfdGFibGUoUlNoYWRlX3BvaW50cywgbmhkcl9saW5lcywgYWRkaXRpb25hbF90YWJsZSkKYGBgCgoKVGhlIGZpbmFsIG9wdGlvbmFsIHN0ZXBzIGFsbG93IHlvdSB0byBleHBvcnQgdGhlIGZpbmFsIHJlc3VsdCBhcyBlaXRoZXIgYSAuY3N2IG9yIApzaGFwZWZpbGUuIFRoZXNlIGNhbiB0aGVuIGJlIGRvd25sb2FkZWQgZnJvbSB0aGUgIkZpbGVzIiB3aW5kb3cuCgpgYGB7cn0Kc3Rfd3JpdGUoUlNoYWRlX3BvaW50cywgImRhdGEvT3V0cHV0LnNocCIpCmBgYAoKYGBge3J9CndyaXRlX2NzdihSU2hhZGVfcG9pbnRzLCAiZGF0YS9PdXRwdXQuY3N2IikKYGBgCgo=</div>
 
 
 
