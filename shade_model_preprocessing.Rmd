@@ -151,14 +151,18 @@ RShade_points <- copy_table(RShade_points, nhdr_lines, additional_table)
 ```
 
 
-The final optional steps allow you to export the final result as either a .csv or 
-shapefile. These can then be downloaded from the "Files" window.
+The final dataset can now be exported as a CSV file. This file will be the input
+for RShade. 
+```{r}
+write_csv(RShade_points, "data/Output.csv")
+```
+
+The final optional steps allow you to export the final result as a shapefile. 
+This can then be downloaded from the "Files" window.
 
 ```{r}
 st_write(RShade_points, "data/Output.shp")
 ```
 
-```{r}
-write_csv(RShade_points, "data/Output.csv")
-```
+
 
