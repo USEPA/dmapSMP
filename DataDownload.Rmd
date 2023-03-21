@@ -1,0 +1,14 @@
+---
+title: "DataDownload"
+output: html_document
+---
+
+This tool is to download files via FTP or URL. The downloaded file will be placed 
+in the /data folder. 
+
+```{r}
+Sys.setenv(download_url = "URL GOES HERE") #place the full URL of the file you want to download within the parentheses
+
+system("./shell/download_data.sh")
+```
+
