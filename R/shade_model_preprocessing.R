@@ -789,7 +789,6 @@ extract_elevation <- function(points, rpu_boundaries) {
   output <- mutate(points, elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)))
   if (length(raster_list) > 1) {
     for (i in 2:length(raster_list)) {
-      ha_raster <- rast(paste("data/HorizonAngle/", raster_list[i], sep = ""))
       dem_raster <- rast(paste("data/Elevation/", raster_list[i], sep = ""))
       message("Evaluating Additional Grids")
       output2 <- mutate(points, elevation = unlist(terra::extract(dem_raster, st_coordinates(points), list = TRUE)))
