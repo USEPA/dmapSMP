@@ -9,6 +9,8 @@ in the /data folder.
 ```{r}
 Sys.setenv(download_url = "URL GOES HERE") #place the full URL of the file you want to download within the parentheses
 
+system("chmod a+x ./shell/download_data.sh")
+
 system("./shell/download_data.sh")
 ```
 
