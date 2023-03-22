@@ -27,7 +27,7 @@ suppressPackageStartupMessages(library(reticulate, quietly = TRUE))
 
 remove(check_install_status)
 
-options(timeout = 300)
+options(timeout = 1200)
 options(warn = -1)
 
 

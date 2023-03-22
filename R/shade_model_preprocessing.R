@@ -72,7 +72,7 @@ sample_shade_points <- function(lines, distance) {
  
  shade_num <- as.integer(round(st_length(nhdplus_dissolve) / distance, 0))
  
- shade_points <- spsample(sp_dissolve, shade_num, "regular") %>%
+ shade_points <- spsample(sp_dissolve, shade_num, "regular", offset = c(0.5, 0.5)) %>%
    st_as_sf()
    
  shade_points$site_id <- seq.int(nrow(shade_points))
