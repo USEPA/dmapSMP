@@ -233,7 +233,12 @@ join_points_lines <- function(points, lines, left.join = TRUE, id.field = "site_
 
 
 
-calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect = TRUE) {
+calc_BFW <- function(shade_points, 
+                     nhdplus_lines,
+                     hlr, bfw_table,
+                     use.transect = TRUE,
+                     coeficient_a,
+                     exponent_b) {
  
   if (bfw_table != FALSE){
     joinPoints <- join_points_lines(shade_points, nhdplus_lines)
@@ -254,8 +259,14 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
     joinPoints <- join_points_lines(shade_points, nhdplus_lines)
     
     message("Joining VAA")
-    points_vaa <- merge(joinPoints, vaa, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
-      st_join(hlr)
+    if(is.na(coeficient_a)| is.na(exponent_b)){
+      points_vaa <- merge(joinPoints, vaa, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
+        st_join(hlr)
+    } else{
+      points_vaa <- merge(joinPoints, vaa, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
+        mutate(a = coeficient_a, b = exponent_b)
+    }
+    
     
     message("Calculating BFW")
     output <- mutate(points_vaa, bfwidth = points_vaa$a * points_vaa$TotDASqKM ** points_vaa$b) %>%
@@ -270,8 +281,7 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
       
       if(nrow(river_lines) == 0){
         message("Lines Do Not Intersect NHDArea Polygons")
-      }
-      else{
+      } else{
         message("Generating Aspects of Line Segments")
         split_lines <- suppressWarnings(stdh_cast_substring(river_lines, to = "LINESTRING")) %>%
           asp_all()
@@ -292,7 +302,7 @@ calc_BFW <- function(shade_points, nhdplus_lines, hlr, bfw_table, use.transect =
       
      
     
-    message("Bankfull Wideth Calculation Complete")
+    message("Bankfull Width Calculation Complete")
     
     output <- filter(output, bfwidth > 0)
     
@@ -643,9 +653,16 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
 #' @param type The middle part of the column name. Vegetation hight is "hght,
 #' and vegetation cover is "cvr". Default value is "hght".
 
-star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght") {
+star_sample <- function(points,
+                        veg_raster,
+                        angle_list,
+                        dist_list,
+                        type = "hght",
+                        export_sample_points = TRUE) {
   
   veg_sample <- points
+  
+  export_df <- data.frame(row.names = c("X", "Y"))
   
   message("Extracting Raster Values")
   for (i in dist_list) {
@@ -657,8 +674,8 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
         direction <- "NN"
       }
       if (j == 45) {
-        shade_coords[, 1] <- shade_coords[, 1] + ((i + (points$bfwidth / 2)) * sqrt(2))
-        shade_coords[, 2] <- shade_coords[, 2] + ((i + (points$bfwidth / 2)) * sqrt(2))
+        shade_coords[, 1] <- shade_coords[, 1] + ((i + (points$bfwidth / 2)) / sqrt(2))
+        shade_coords[, 2] <- shade_coords[, 2] + ((i + (points$bfwidth / 2)) / sqrt(2))
         direction <- "NE"
       }
       if (j == 90) {
@@ -666,8 +683,8 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
         direction <- "EE"
       }
       if (j == 135) {
-        shade_coords[, 1] <- shade_coords[, 1] + ((i + (points$bfwidth / 2)) * sqrt(2))
-        shade_coords[, 2] <- shade_coords[, 2] - ((i + (points$bfwidth / 2)) * sqrt(2))
+        shade_coords[, 1] <- shade_coords[, 1] + ((i + (points$bfwidth / 2)) / sqrt(2))
+        shade_coords[, 2] <- shade_coords[, 2] - ((i + (points$bfwidth / 2)) / sqrt(2))
         direction <- "SE"
       }
       if (j == 180) {
@@ -675,8 +692,8 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
         direction <- "SS"
       }
       if (j == 225) {
-        shade_coords[, 1] <- shade_coords[, 1] - ((i + (points$bfwidth / 2)) * sqrt(2))
-        shade_coords[, 2] <- shade_coords[, 2] - ((i + (points$bfwidth / 2)) * sqrt(2))
+        shade_coords[, 1] <- shade_coords[, 1] - ((i + (points$bfwidth / 2)) / sqrt(2))
+        shade_coords[, 2] <- shade_coords[, 2] - ((i + (points$bfwidth / 2)) / sqrt(2))
         direction <- "SW"
       }
       if (j == 270) {
@@ -684,11 +701,11 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
         direction <- "WW"
       }
       if (j == 315) {
-        shade_coords[, 1] <- shade_coords[, 1] - ((i + (points$bfwidth / 2)) * sqrt(2))
-        shade_coords[, 2] <- shade_coords[, 2] + ((i + (points$bfwidth / 2)) * sqrt(2))
+        shade_coords[, 1] <- shade_coords[, 1] - ((i + (points$bfwidth / 2)) / sqrt(2))
+        shade_coords[, 2] <- shade_coords[, 2] + ((i + (points$bfwidth / 2)) / sqrt(2))
         direction <- "NW"
       }
-
+    
       colname <- paste(direction, type, "VZ", which(dist_list == i), sep = "")
       if(type == "dens"){
         veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(veg_raster, shade_coords, list = TRUE))/100)
@@ -697,10 +714,15 @@ star_sample <- function(points, veg_raster, angle_list, dist_list, type = "hght"
         veg_sample <- mutate(veg_sample, !!colname := unlist(terra::extract(veg_raster, shade_coords, list = TRUE)))
       }
       
-      
+      if(export_sample_points == TRUE){
+        export_df <- rbind(export_df, as.data.frame(shade_coords))
+      }
     }
   }
   message("Complete")
+  if(export_sample_points == TRUE){
+    write_csv(export_df, "StarSampleCoords.csv")
+  }
   return(veg_sample)
 }
 
@@ -847,17 +869,17 @@ copy_table <- function(points, lines, table){
 #' @description Some additional fields are needed for RShade processing. These
 #' fields are either static values or are calculated based on other fields. 
 
-finalize_cols <- function(points){
+finalize_cols <- function(points, ovrhng_dividend){
   
   output <- mutate(points,
-                   NNovrhng := NNhghtVZ1/10,
-                   NEovrhng := NEhghtVZ1/10,
-                   EEovrhng := EEhghtVZ1/10,
-                   SEovrhng := SEhghtVZ1/10,
-                   SSovrhng := SShghtVZ1/10,
-                   SWovrhng := SWhghtVZ1/10,
-                   WWovrhng := WWhghtVZ1/10,
-                   NWovrhng := NWhghtVZ1/10,
+                   NNovrhng := NNhghtVZ1/ovrhng_dividend,
+                   NEovrhng := NEhghtVZ1/ovrhng_dividend,
+                   EEovrhng := EEhghtVZ1/ovrhng_dividend,
+                   SEovrhng := SEhghtVZ1/ovrhng_dividend,
+                   SSovrhng := SShghtVZ1/ovrhng_dividend,
+                   SWovrhng := SWhghtVZ1/ovrhng_dividend,
+                   WWovrhng := WWhghtVZ1/ovrhng_dividend,
+                   NWovrhng := NWhghtVZ1/ovrhng_dividend,
                    wwidth = bfwidth, 
                    disfromcentertolb = (bfwidth/2), 
                    incision = 0)

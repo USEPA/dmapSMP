@@ -10,11 +10,21 @@ Start by setting the parameters for running Shade Model Preprocessing
 # If you are using a shapefile, the input_lines_feature_name can be left as is, 
 # as it will be ignored by the code. 
 
-input_lines <- "~/shared/RShade/UR_NHDHR_lines_empty_atttable.shp"
+input_lines <- "~/shared/RShade/trimmed_17100307.shp"
 
 input_lines_feature_name <- "NHDFlowline"
 
 sample_point_distance <- 50
+
+# Bankfull width is calculated as a function of the watershed area using a
+# coeficient (a) and an exponent (b) in the following equation:
+# BFW = a * (WatershedArea ^ b)
+# These values are determined automatically based on HLR. If you wish to use 
+#your own values, you can designate them below. 
+
+bfw_a <- NA # make sure this is NA when not using your own value
+
+bfw_b <- NA # make sure this is NA when not using your own value
 
 # Sample angles can only contain the angles 0, 45, 135, 180, 225, 270, 315. 
 # Values can be removed, but new values cannot be added
@@ -24,6 +34,11 @@ star_sample_angles <- c(0, 45, 90, 135, 180, 225, 270, 315)
 # Distances are in meters
 
 star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
+
+# Vegetation overhang is calculates as a fraction of vegetation height.
+# The dividend can be specified below. 
+
+overhang_dividend <- 10 # default value is 10
 
 # If you wish to use the provided grids for horizon angle, vegetation cover, and 
 # vegetation height, set the vales below to FALSE. Otherwise, populate with the
@@ -70,17 +85,20 @@ especially if your input dataset is large.
 shade_points <- sample_shade_points(nhdr_lines, sample_point_distance)
 ```
 
-This step calculates the bankfull width (BFW) of each shade point. By default, this 
-function will start by using a mathematical equation to calculate BFW and then
-move on to checking for available river/stream boundary polygons and measuring
-the BFW of applicable shade points using the length of perpendicular
+This step calculates the bankfull width (BFW) of each shade point. By default, this function will start by using a mathematical equation to calculate BFW and then move on to checking for available river/stream boundary polygons and measuring the BFW of applicable shade points using the length of perpendicular
 transects of these polygons. If you wish to only use the equation, set
 "use.transect" to FALSE.
 
 This step downloads one or more geodatabases, and may take a few minutes.
 
 ```{r}
-RShade_points <- calc_BFW(shade_points, nhdr_lines, hlr, external_BFW_table, use.transect = TRUE)
+RShade_points <- calc_BFW(shade_points, 
+                          nhdr_lines, 
+                          hlr, 
+                          external_BFW_table, 
+                          use.transect = TRUE,
+                          bfw_a,
+                          bfw_b)
 ```
 
 This step adds and populates latitude and longitude fields.
@@ -123,11 +141,20 @@ Landfire grids. The more angles and distances sampled, the longer these steps
 will take. 
 
 ```{r}
-RShade_points <- star_sample(RShade_points, veg_height, star_sample_angles, star_sample_distances, type="hght")
+RShade_points <- star_sample(RShade_points, 
+                             veg_height, 
+                             star_sample_angles, 
+                             star_sample_distances, 
+                             type="hght",
+                             export_sample_points = TRUE)
 ```
 
 ```{r}
-RShade_points <- star_sample(RShade_points, veg_cover, star_sample_angles, star_sample_distances, type="dens")
+RShade_points <- star_sample(RShade_points, 
+                             veg_cover, 
+                             star_sample_angles, 
+                             star_sample_distances, 
+                             type="dens")
 ```
 
 The final step calculates additional columns that are needed for processing in 
@@ -135,7 +162,7 @@ RShade. This is done at the end because many of the columns are based on other
 columns that were calculated as a part of Shade Model Prepreocessing. 
 
 ```{r}
-RShade_points <- finalize_cols(RShade_points)
+RShade_points <- finalize_cols(RShade_points, overhang_dividend)
 ```
 
 
