@@ -35,6 +35,10 @@ star_sample_angles <- c(0, 45, 90, 135, 180, 225, 270, 315)
 
 star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 
+# Set to TRUE if you wish to export the star sample point coordinates to a csv.
+
+export_star_sample_points <- FALSE 
+
 # Vegetation overhang is calculates as a fraction of vegetation height.
 # The dividend can be specified below. 
 
@@ -146,7 +150,7 @@ RShade_points <- star_sample(RShade_points,
                              star_sample_angles, 
                              star_sample_distances, 
                              type="hght",
-                             export_sample_points = TRUE)
+                             export_star_sample_points)
 ```
 
 ```{r}
