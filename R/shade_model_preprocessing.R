@@ -882,7 +882,8 @@ finalize_cols <- function(points, ovrhng_dividend){
                    NWovrhng := NWhghtVZ1/ovrhng_dividend,
                    wwidth = bfwidth, 
                    disfromcentertolb = (bfwidth/2), 
-                   incision = 0)
+                   incision = 0) %>%
+    na.omit()
   message("Complete")
   return(output)
 }
