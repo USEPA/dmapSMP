@@ -1,8 +1,8 @@
-# dmap-RShade
+# dmapSMP
 To Run Shade Model Preprocessing in anote RStudio instance:
 - On the menu bar, select "File" -> "New Project"
 - Select the "Version Control" option
-- Input the url: https://github.com/USEPA/dmap-shade-model-preprocessing.git
+- Input the url: https://github.com/USEPA/dmapSMP.git
 - Select "Create Project"
 - In the "Files" window in the bottom right of the screen, open shade_model_preprocessing.Rmd
 - Upload your NHDRPlus HR linework dataset using the "Upload" button in the "Files" window. 
