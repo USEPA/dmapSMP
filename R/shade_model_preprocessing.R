@@ -129,7 +129,6 @@ download_NHDPlus_GDB <- function(huc4) {
     gdb_path <- c(gdb_path, (paste(path, list.files(path)[1], sep = "/")))
   }
 
-
   return(gdb_path)
 }
 
@@ -251,7 +250,7 @@ calc_BFW <- function(shade_points,
     
     message(paste("HUC4: ", huc, " ", sep = ""))
     
-    gdb_path <- download_NHDPlus_GDB(huc)
+    gdb_path <<- download_NHDPlus_GDB(huc)
     
     vaa <- assign_vaa(gdb_path)
     
@@ -871,6 +870,8 @@ copy_table <- function(points, lines, table){
 
 finalize_cols <- function(points, ovrhng_dividend){
   
+  num_rows <- nrow(points)
+  
   output <- mutate(points,
                    NNovrhng := NNhghtVZ1/ovrhng_dividend,
                    NEovrhng := NEhghtVZ1/ovrhng_dividend,
@@ -884,6 +885,62 @@ finalize_cols <- function(points, ovrhng_dividend){
                    disfromcentertolb = (bfwidth/2), 
                    incision = 0) %>%
     na.omit()
+  
+  final_rows <- nrow(output)
+  
+  if(num_rows > final_rows){
+    removed_num <- num_rows - final_rows
+    message(paste(removed_num), " row(s) removed due to null values")
+  }
+  
   message("Complete")
   return(output)
+}
+
+get_annual_precip <- function(gdb_path, nhdr_input_lines){
+  
+  precip_all <- st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM01", quiet = TRUE) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM02", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM03", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM04", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM05", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM06", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM07", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM08", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM09", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM10", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM11", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM12", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"))
+  
+  
+  annual_precip <- subset(mutate(precip_all, PrecipA = PrecipMM01 + PrecipMM02 + PrecipMM03 + PrecipMM04 + PrecipMM05 + PrecipMM06 + PrecipMM07 + PrecipMM08 + PrecipMM09 + PrecipMM10 + PrecipMM11 + PrecipMM12), 
+                          select = c("NHDPlusID", "PrecipA"))
+  
+  if (length(gdb_path) > 1) {
+    message("Evaluating additional data sources...")
+    for (i in 2:length(gdb_path)) {
+      precip_all2 <- subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM01", quiet = TRUE), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM02", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM03", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM04", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM05", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM06", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM07", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM08", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM09", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM10", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM11", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
+        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM12", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"))
+      
+      annual_precip2 <- subset(mutate(precip_all, PrecipA = PrecipMM01 + PrecipMM02 + PrecipMM03 + PrecipMM04 + PrecipMM05 + PrecipMM06 + PrecipMM07 + PrecipMM08 + PrecipMM09 + PrecipMM10 + PrecipMM11 + PrecipMM12), 
+                              select = c("NHDPlusID", "PrecipA"))
+      
+      annual_precip <- rbind(annual_precip, annual_precip2)
+    }
+  }
+  
+  message("Joining to NHDHR Lines...")
+  
+  nhdr_precip <- merge(nhdr_lines, annual_precip, by.x = "NHDPlusIDt", by.y = "NHDPlusID")
+  return(nhdr_precip)
 }
