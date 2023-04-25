@@ -29,6 +29,7 @@ remove(check_install_status)
 
 options(timeout = 1200)
 options(warn = -1)
+options(scipen = 999)
 
 
 

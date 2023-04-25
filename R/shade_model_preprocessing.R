@@ -124,10 +124,12 @@ download_NHDPlus_GDB <- function(huc4) {
   gdb_path <- c()
 
   for (i in huc4) {
-    path <- download_nhdplushr(tempdir(), i)
+    path <- download_nhdplushr(paste(tempdir(),"/", i, sep=""), i)
 
-    gdb_path <- c(gdb_path, (paste(path, list.files(path)[1], sep = "/")))
+    gdb_path <- append(gdb_path, list.files(path, pattern = "\\.gdb$", full.names = TRUE ))
   }
+  
+  #gdb_path <- list.files(path, pattern = "\\.gdb$", full.names = TRUE )
 
   return(gdb_path)
 }
@@ -157,7 +159,7 @@ assign_vaa <- function(gdb_path) {
   if (length(gdb_path) > 1) {
     for (i in 2:length(gdb_path)) {
       vaa2 <- st_read(gdb_path[i], layer = "NHDPlusFlowlineVAA", quiet = TRUE)
-      vaa_TotDaSqKM2 <- as.data.frame(cbind(vaa$NHDPlusID, vaa$TotDASqKm))
+      vaa_TotDaSqKM2 <- as.data.frame(cbind(vaa2$NHDPlusID, vaa2$TotDASqKm))
       colnames(vaa_TotDaSqKM2) <- c("NHDPlusID", "TotDASqKM")
       
       vaa_TotDaSqKM <- rbind(vaa_TotDaSqKM, vaa_TotDaSqKM2)
@@ -897,7 +899,7 @@ finalize_cols <- function(points, ovrhng_dividend){
   return(output)
 }
 
-get_annual_precip <- function(gdb_path, nhdr_input_lines){
+get_annual_precip <- function(geodatabase_path, nhdr_input_lines){
   
   precip_all <- st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM01", quiet = TRUE) %>%
     merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM02", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%

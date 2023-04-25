@@ -10,14 +10,14 @@ Start by setting the parameters for running Shade Model Preprocessing
 # If you are using a shapefile, the input_lines_feature_name can be left as is, 
 # as it will be ignored by the code. 
 
-input_lines <- "~/shared/RShade/trimmed_17100307.shp"
+input_lines <- "~/private/dmap-shade-model-preprocessing/data/Flowline_01020001.shp"
 
 input_lines_feature_name <- "NHDFlowline"
 
 sample_point_distance <- 50
 
 # Bankfull width is calculated as a function of the watershed area using a
-# coeficient (a) and an exponent (b) in the following equation:
+# coefficient (a) and an exponent (b) in the following equation:
 # BFW = a * (WatershedArea ^ b)
 # These values are determined automatically based on HLR. If you wish to use 
 #your own values, you can designate them below. 
