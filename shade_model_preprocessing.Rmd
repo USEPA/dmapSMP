@@ -70,8 +70,9 @@ this step may take a few minutes as it installs the required libraries and
 downloads the required files.
 
 ```{r}
-source("R/initialize.R")
-source("R/shade_model_preprocessing.R")
+#source("R/initialize.R")
+#source("R/shade_model_preprocessing.R")
+devtools::load_all()
 ```
 
 This step imports your NHDPlus HR lines, retrieves the correct columns, and 
