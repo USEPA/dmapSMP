@@ -3,26 +3,25 @@ title: "accumulate_python"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+Users, please note that this process can only be run if the shade_model_preprocessing.Rmd
+process has been run through the BFW calculation step, and a HUC4 geodatabase was
+downloaded as a part of that process. 
+
+
+```{r}
+annual_precip <- get_annual_precip(gdb_path, nhdr_lines)
+
+write_csv(annual_precip, "python/annual_precip.csv")
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+metric <- "PrecipMM01"
+input_data <- "edges4.csv"
+input_relshpCSV <- "relationships2.csv"
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+source_python("python/test_fun.py")
+accumulate_precip(metric, input_data, input_relshpCSV)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

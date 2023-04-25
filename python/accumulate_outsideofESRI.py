@@ -8,7 +8,7 @@ import os
 import csv
 
 #metric to be accumulated
-metric = "PrecipMM01"
+metric = "PrecipA"
 
 #path to relationship table from lsn that has been converted to csv file
 relshpCSV = r'python/relationships2.csv'
@@ -21,7 +21,7 @@ accumTables = r'python'
 
 #years that need to be accumulated
     
-csvfile = edgePath + 'edges4'+'.csv'
+csvfile = edgePath + 'annual_precip'+'.csv'
 outTable = accumTables + '/'
 
 
