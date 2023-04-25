@@ -943,6 +943,6 @@ get_annual_precip <- function(geodatabase_path, nhdr_input_lines){
   
   message("Joining to NHDHR Lines...")
   
-  nhdr_precip <- merge(nhdr_lines, annual_precip, by.x = "NHDPlusIDt", by.y = "NHDPlusID")
-  return(nhdr_precip)
+  nhdr_precip <- merge(nhdr_lines, annual_precip, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE)
+  return(annual_precip)
 }
