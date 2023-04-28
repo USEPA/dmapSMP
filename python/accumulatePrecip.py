@@ -6,6 +6,7 @@ This code was written by Ellen D'Amico (Pegasus Technical Services, Inc c/o USEP
 import pandas as pd
 import os
 import csv
+import time
 
 def accumulate_precip(metric, input_data, input_relshpCSV):
     #metric to be accumulated
@@ -33,15 +34,15 @@ def accumulate_precip(metric, input_data, input_relshpCSV):
         #import csv as pd
         df = pd.read_csv(relshpCSV)
         #get a unique list of tofeat ids
-        toFeatList =list(set(df['tofeat'].tolist()))
+        toFeatList =list(set(df['ToNHDPID'].tolist()))
         
-        #get a list of fromfeat ids that are upstream of the tofeat ids and add it to dictionary
+        #get a list of FromNHDPID ids that are upstream of the tofeat ids and add it to dictionary
         toFeatDict = {}
         for id in toFeatList:
-            df1 = df[df["tofeat"] == id]
-            fromList = list(set(df1['fromfeat'].tolist()))
+            df1 = df[df["ToNHDPID"] == id]
+            fromList = list(set(df1['FromNHDPID'].tolist()))
             toFeatDict[id] = fromList
-            print(id)
+            
             
         
         upDict = {}
@@ -65,18 +66,18 @@ def accumulate_precip(metric, input_data, input_relshpCSV):
                     newLen = len(set(upList))
                    
             upDict[k] = str(upList)
-            print(k)
+            
         
         #convert dictionary to pd and then to csv file
         dfDict = pd.DataFrame.from_dict(upDict, orient = "index").reset_index()
         
-        dfDict.rename(columns={"index": "rid", 0: "values"}).to_csv(accumTables + "/relationshipdict.csv", index = False, columns = ("rid", "values"))
-    
+        dfDict.rename(columns={"index": "NHDPlusIDt", 0: "values"}).to_csv(accumTables + "/relationshipdict.csv", index = False, columns = ("NHDPlusIDt", "values"))
+        
     else:
         #get a list of all rids 
         df = pd.read_csv(relshpCSV)
         #get a unique list of tofeat
-        toFeatList =list(set(df['tofeat'].tolist()))
+        toFeatList =list(set(df['ToNHDPID'].tolist()))
         
         #import csv as dictionary  
         dictTable = accumTables + "//relationshipdict.csv"
@@ -90,19 +91,22 @@ def accumulate_precip(metric, input_data, input_relshpCSV):
             # if len(thedict.keys()) > 2:
             #     val1 = int(thedict['values'].replace("[", ""))
             #     valList = [int(v.replace("]", "")) for v in thedict[None] ]
-            #     upDict[int(thedict['rid'])] = [val1] + valList
+            #     upDict[int(thedict['NHDPlusIDt'])] = [val1] + valList
             # else:
             val1 = thedict['values'].replace("[", "").replace("]","")
             valList = [int(v)  for v in val1.split(",")]
-            upDict[int(thedict['rid'])] =valList
+            upDict[int(thedict['NHDPlusIDt'])] =valList
     
     #import metric csv as pd
     
-    df = pd.read_csv(csvfile)
-    ridList = df["rid"]
+    df = pd.read_csv(csvfile, dtype = {"NHDPlusIDt":str })
+    
+    ridList = df["NHDPlusIDt"]
     
     
     dfList = []
+    
+    
     #for each of the rids
     for rid in ridList:
         if rid in upDict.keys():
@@ -112,7 +116,7 @@ def accumulate_precip(metric, input_data, input_relshpCSV):
             upIDs = [rid]
     
         #create a dataframe of upstream ids including the current id
-        dfQ = df[df['rid'].isin(upIDs)]
+        dfQ = df[df['NHDPlusIDt'].isin(upIDs)]
     
         #get a list of all of the columns you need to accumulate
         #if the columns that you need to accumulate start with something different than the metric variable change it here (see example below)
@@ -121,7 +125,7 @@ def accumulate_precip(metric, input_data, input_relshpCSV):
     
         #sum the values for each of the columns in the data frame
         sumdf = dfQ[colList].sum()
-        sumdf["rid"] = rid
+        sumdf["NHDPlusIDt"] = rid
     
         #transpose the dataframe
         sumdf1 = pd.DataFrame({'fields':sumdf.index, 'values':sumdf.values}).T

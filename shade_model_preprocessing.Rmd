@@ -10,7 +10,7 @@ Start by setting the parameters for running Shade Model Preprocessing
 # If you are using a shapefile, the input_lines_feature_name can be left as is, 
 # as it will be ignored by the code. 
 
-input_lines <- "~/private/dmap-shade-model-preprocessing/data/Flowline_01020001.shp"
+input_lines <- "~/private/dmapSMP/data/test2.shp"
 
 input_lines_feature_name <- "NHDFlowline"
 
@@ -20,7 +20,7 @@ sample_point_distance <- 50
 # coefficient (a) and an exponent (b) in the following equation:
 # BFW = a * (WatershedArea ^ b)
 # These values are determined automatically based on HLR. If you wish to use 
-#your own values, you can designate them below. 
+# your own values, you can designate them below. 
 
 bfw_a <- NA # make sure this is NA when not using your own value
 
@@ -37,7 +37,7 @@ star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 
 # Set to TRUE if you wish to export the star sample point coordinates to a csv.
 
-export_star_sample_points <- FALSE 
+export_star_sample_points <- TRUE
 
 # Vegetation overhang is calculates as a fraction of vegetation height.
 # The dividend can be specified below. 
@@ -79,7 +79,7 @@ This step imports your NHDPlus HR lines, retrieves the correct columns, and
 gets is into the correct coordinate system.
 
 ```{r}
-nhdr_lines <- read_nhdplus_lines(input_lines, input_lines_feature_name)
+nhdphr_lines <- read_nhdplus_lines(input_lines, input_lines_feature_name)
 ```
 
 This step generates sample points at 50 meter intervals along your input dataset.
@@ -87,7 +87,7 @@ Keep in mind the output changes each time this is run. This may take a few minut
 especially if your input dataset is large.
 
 ```{r}
-shade_points <- sample_shade_points(nhdr_lines, sample_point_distance)
+shade_points <- sample_shade_points(nhdphr_lines, sample_point_distance)
 ```
 
 This step calculates the bankfull width (BFW) of each shade point. By default, this function will start by using a mathematical equation to calculate BFW and then move on to checking for available river/stream boundary polygons and measuring the BFW of applicable shade points using the length of perpendicular
@@ -98,7 +98,7 @@ This step downloads one or more geodatabases, and may take a few minutes.
 
 ```{r}
 RShade_points <- calc_BFW(shade_points, 
-                          nhdr_lines, 
+                          nhdphr_lines, 
                           hlr, 
                           external_BFW_table, 
                           use.transect = TRUE,
@@ -179,7 +179,7 @@ to the excel or csv.
 ```{r}
 additional_table <- "data/Test_table.xlsx"
 
-RShade_points <- copy_table(RShade_points, nhdr_lines, additional_table)
+RShade_points <- copy_table(RShade_points, nhdphr_lines, additional_table)
 ```
 
 

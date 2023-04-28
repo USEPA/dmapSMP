@@ -9,19 +9,22 @@ downloaded as a part of that process.
 
 
 ```{r}
-annual_precip <- get_annual_precip(gdb_path, nhdr_lines)
+annual_precip <- get_annual_precip(gdb_path, nhdphr_lines)
+
+relationship <- get_relationship_table(gdb_path, nhdphr_lines)
 
 write_csv(annual_precip, "python/annual_precip.csv")
+write_csv(relationship, "python/relationships.csv")
 ```
 
 ```{r}
-metric <- "PrecipMM01"
-input_data <- "edges4.csv"
-input_relshpCSV <- "relationships2.csv"
+metric <- "PrecipA"
+input_data <- "annual_precip.csv"
+input_relshpCSV <- "relationships.csv"
 ```
 
 ```{r}
-source_python("python/test_fun.py")
+source_python("python/accumulatePrecip.py")
 accumulate_precip(metric, input_data, input_relshpCSV)
 ```
 

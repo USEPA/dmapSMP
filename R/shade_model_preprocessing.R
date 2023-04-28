@@ -1,21 +1,23 @@
 #' Read a shapefile containing NHDPlus HR lines
 #' 
 #' @description 
-#' `read_ndhr_lines` imports a shapefile containing NHDPlus HR flowline data
-#' and prepares it for Shade Model Preprocessing. The preparations steps
-#' performed by this function are:
-#' * `sf::st_read()` - shapefile is imported as a dataframe of class "sf"
+#' Imports a shapefile or file geodatabase feature class
+#' containing NHDPlus HR flowline data and prepares it for Shade Model 
+#' Preprocessing. The preparations steps performed by this function are:
+#' * `sf::st_read()` - shapefile/feature class is imported as a dataframe of class "sf"
 #' * `sf::st_zm()` - all Z and M values are removed
 #' * `sf::st_transform()` - ensures that the dataset is in NAD83 Conus ALbers (EPSG:5070)
-#' * `asp_all()` - aspect is calculated for every reach. This is done now for convenience. 
+#' * `asp_all()` - aspect is calculated for every reach.
 #' 
-#' @param nhdplus_shapefile While a shapefile is recommended, this input can 
-#' technically be any format accepted by the `sf::st_read()` function.
-#' The primary requirements here is that the dataset must be lines 
-#' (not points or polygons), and must include a column containing the NHDPLusID
-#' of every reach as text (not numeric). Future versions of this function will
-#' convert input NHDPlusID from numeric to text, as well as allow the user to 
-#' specify the NHDPlusID column name.
+#' If no NHDPlusIDt field is present, it will be created. 
+#' 
+#' @param nhdplus_data A file path to either a shapefile or geodatabase that
+#' contains the NHDPlus HR lines you wish to process. This dataset must contain
+#' a row named NHDPlusID or NHDPlusIDt (text version of NHDPlusID field). 
+#' 
+#' @param nhdplus_feature_name If the file format for your input dataset is a 
+#' file geodatabase, then this parameter is used to designate the name of the
+#' feature class that needs to be read.
 
 
 read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
@@ -59,6 +61,8 @@ read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
 #' 
 #' @param lines Needs to be a dataframe of class "sf" containing linestring
 #' geometry. lines must be in projected in NAD Conus Albers (EPSG:5070).
+#' 
+#' @param distance The distance between the output sample points in meters. 
 
 
 sample_shade_points <- function(lines, distance) {
@@ -79,8 +83,6 @@ sample_shade_points <- function(lines, distance) {
  
  message("Shade Point Generation Complete")
    
- 
-   
  return(shade_points)
 }
 
@@ -92,7 +94,7 @@ sample_shade_points <- function(lines, distance) {
 #' input exists within. This can be 1 or more values.  
 #' 
 #' @param lines Needs to be a dataframe of class "sf" containing linestring
-#' geometry. lines must be in projected in NAD Conus Albers (EPSG:5070).
+#' geometry. Lines must be in projected in NAD Conus Albers (EPSG:5070).
 #' 
 #' @noRD
 
@@ -108,10 +110,10 @@ get_huc4 <- function(lines) {
 }
 
 
-#' Download geodatabases that correspond with the HUC4 values 
+#' Downloads NHDPlusHR geodatabases that correspond with the HUC4 values 
 #' 
 #' @description
-#' Downloads the geodatabases that correspond with the input HUC4 values and
+#' Downloads the NHDPlusHR geodatabases that correspond with the input HUC4 values and
 #' places them in the temporary directory. Output a vector containing the path(s)
 #' to the geodatabase(s).
 #' 
@@ -154,7 +156,6 @@ assign_vaa <- function(gdb_path) {
   
   colnames(vaa_TotDaSqKM) <- c("NHDPlusID", "TotDASqKM")
   
-
 
   if (length(gdb_path) > 1) {
     for (i in 2:length(gdb_path)) {
@@ -221,16 +222,28 @@ join_points_lines <- function(points, lines, left.join = TRUE, id.field = "site_
 #' geometry. Lines must be in projected in NAD Conus Albers (EPSG:5070) and have 
 #' a unique ID field called "site_id".
 #' 
-#' @param hlr shapefile containing hydrologic landscape region areas with 
+#' @param hlr Shapefile containing hydrologic landscape region areas with 
 #' coefficients and exponets for the BFW calculation equation described in
 #' Blackburn-Lynch et al. 2017 .
 #' 
-#' @param bfw_table file path to csv or excel file containing bankfull width values
+#' @param bfw_table File path to csv or excel file containing bankfull width values
 #' you want to use in place of calculating said values.
 #' 
 #' @param use.transect Designate whether you want to measure NHD_Area transect
 #' widths in addition to using an equation to calculate bankfull width.
 #' Default value is TRUE.
+#' 
+#' @param coeficient_a Bankfull width is calculated as a function of the watershed area using a
+#' coefficient (a) and an exponent (b) in the following equation:
+#' BFW = a * (WatershedArea ^ b)
+#' These values are determined automatically based on HLR. If you wish to use 
+#' your own value for a, you can designate it with this parameter. 
+#' 
+#' @param exponent_b Bankfull width is calculated as a function of the watershed area using a
+#' coefficient (a) and an exponent (b) in the following equation:
+#' BFW = a * (WatershedArea ^ b)
+#' These values are determined automatically based on HLR. If you wish to use 
+#' your own value for b, you can designate it with this parameter.
 
 
 
@@ -401,9 +414,11 @@ stdh_cast_substring <- function(river_lines, to = "MULTILINESTRING") {
 
 #' Extract NHDPlus HR lines intersect NHD_Area polygons 
 #' 
-#' @param river_lines Needs to be a dataframe of class "sf" containing linestring
-#' geometry. lines must be in projected in NAD Conus Albers (EPSG:5070). In this
-#' case, only lines that intersect NHD_Area polygons are used.
+#' @param gdb_path a vector containing the path(s) to the NHDPlus HR geodatabases
+#' that correspond to the HUC4s generated by `get_huc4()`
+#' 
+#' @param nhdplus_lines Needs to be a dataframe of class "sf" containing linestring
+#' geometry. lines must be in projected in NAD Conus Albers (EPSG:5070).
 #'
 #' @noRD
 
@@ -494,12 +509,12 @@ create_transect <- function(aspect_points, width = 50) {
 #' dataframe of class "sf" containing linestring
 #' geometry. Lines must be in projected in NAD Conus Albers (EPSG:5070).
 #'
-#' @param site_id Name of the unique ID field for the transect lines. Default
+#' @param id_field Name of the unique ID field for the transect lines. Default
 #' is "site_id.
 #' 
 #' @noRD
 
-calc_transect_width <- function(transect, gdb_path, id.field = "site_id") {
+calc_transect_width <- function(transect, gdb_path, id_field = "site_id") {
   streams_rivers <- st_read(gdb_path[1], layer = "NHDArea", quiet = TRUE) %>%
     filter(FType == 460) %>%
     st_make_valid() %>%
@@ -646,20 +661,23 @@ extract_horizon_angle <- function(points, rpu_boundaries) {
 #' @param veg_raster Path to the raster file you will be using.
 #' 
 #' @param angle_list Vector containing the angles the sample points will be 
-#' generated at. Angles can be removed, but angles outside of the defaul 8 angles
+#' generated at. Angles can be removed, but angles outside of the default 8 angles
 #' are not valid. 
 #' 
 #' @param dist_list Vector containing the sample point distances from the origin.
 #' 
 #' @param type The middle part of the column name. Vegetation hight is "hght,
 #' and vegetation cover is "cvr". Default value is "hght".
+#' 
+#' @param export_sample_points Designate whether you want the coordinates of 
+#' your sample points exported to a csv. 
 
 star_sample <- function(points,
                         veg_raster,
                         angle_list,
                         dist_list,
                         type = "hght",
-                        export_sample_points = TRUE) {
+                        export_sample_points = FALSE) {
   
   veg_sample <- points
   
@@ -722,7 +740,8 @@ star_sample <- function(points,
   }
   message("Complete")
   if(export_sample_points == TRUE){
-    write_csv(export_df, "StarSampleCoords.csv")
+    write_csv(export_df, "data/StarSampleCoords.csv")
+    message("StarSampleCoords.csv has been written to the /data folder")
   }
   return(veg_sample)
 }
@@ -868,9 +887,22 @@ copy_table <- function(points, lines, table){
 #' Calculates additional columns that are needed to be processed in RShade 
 #' 
 #' @description Some additional fields are needed for RShade processing. These
-#' fields are either static values or are calculated based on other fields. 
+#' fields are either static values or are calculated based on other fields.These
+#' fields are:
+#' * XXoverhng - overhang for each direction. Calculated as a fraction of vegetation height.
+#' * wwidth - same as bankfull width
+#' * disfromcentertolb - half of bankfull width
+#' * incision - assumed to be 0
+#' 
+#' @param points Needs to be a dataframe of class "sf" containing point
+#' geometry. Points must be in projected in NAD Conus Albers (EPSG:5070). Must have
+#' a bankfull width and vegetation heights fields already calculated by `calc_BFW()
+#' 
+#' @param ovrhng_dividend Vegetation overhang is typically calculated as
+#' the first vegetation height value divided by 10. If you wish to use a different
+#' dividend for this equation, you can designate it with this parameter. 
 
-finalize_cols <- function(points, ovrhng_dividend){
+finalize_cols <- function(points, ovrhng_dividend = 10){
   
   num_rows <- nrow(points)
   
@@ -899,40 +931,53 @@ finalize_cols <- function(points, ovrhng_dividend){
   return(output)
 }
 
-get_annual_precip <- function(geodatabase_path, nhdr_input_lines){
+#' Calculates the annual precipitation for each input NHDPlusID based on the 
+#' NDHPlusIncrPrecipMMxx tables in the HUC4 NHDPlusHR file geodatabase(s).
+#' 
+#' @description To use the accumulation python script, you will need to provide 
+#' precipitation values for each NHDPlusID. The annual precipitation tables
+#' in HUC4 NHDPlusHR file geodatabases can be blank, so each monthly precipitation
+#' value is summed for each NHDPlusID and then joined to the input lines. 
+#' 
+#' @param geodatabase_path a vector containing the path(s) to the NHDPlus HR geodatabases
+#' that correspond to the HUC4s generated by `get_huc4()`
+#' 
+#' @param nhdphr_input_lines the dataframe created when running `read_nhdplus_lines()`
+#' 
+get_annual_precip <- function(geodatabase_path, nhdphr_input_lines){
   
-  precip_all <- st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM01", quiet = TRUE) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM02", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM03", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM04", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM05", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM06", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM07", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM08", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM09", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM10", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM11", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-    merge(subset(st_read(gdb_path[1], layer = "NHDPlusIncrPrecipMM12", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"))
+  precip_all <- st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM01", quiet = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM02", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM03", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM04", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM05", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM06", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM07", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM08", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM09", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM10", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM11", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+    merge(subset(st_read(geodatabase_path[1], layer = "NHDPlusIncrPrecipMM12", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE)
   
   
   annual_precip <- subset(mutate(precip_all, PrecipA = PrecipMM01 + PrecipMM02 + PrecipMM03 + PrecipMM04 + PrecipMM05 + PrecipMM06 + PrecipMM07 + PrecipMM08 + PrecipMM09 + PrecipMM10 + PrecipMM11 + PrecipMM12), 
                           select = c("NHDPlusID", "PrecipA"))
   
-  if (length(gdb_path) > 1) {
+  if (length(geodatabase_path) > 1) {
     message("Evaluating additional data sources...")
-    for (i in 2:length(gdb_path)) {
-      precip_all2 <- subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM01", quiet = TRUE)) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM02", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM03", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM04", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM05", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM06", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM07", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM08", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM09", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM10", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM11", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID")) %>%
-        merge(subset(st_read(gdb_path[i], layer = "NHDPlusIncrPrecipMM12", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"))
+    for (i in 2:length(geodatabase_path)) {
+      precip_all2 <- subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM01", quiet = TRUE)) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM02", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM03", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM04", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM05", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM06", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM07", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM08", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM09", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM10", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM11", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE) %>%
+        merge(subset(st_read(geodatabase_path[i], layer = "NHDPlusIncrPrecipMM12", quiet = TRUE), by = "NHDPlusID"), select = -c("HydrologicSequence", "VPUID"), all.x = TRUE)
       
       annual_precip2 <- subset(mutate(precip_all2, PrecipA = PrecipMM01 + PrecipMM02 + PrecipMM03 + PrecipMM04 + PrecipMM05 + PrecipMM06 + PrecipMM07 + PrecipMM08 + PrecipMM09 + PrecipMM10 + PrecipMM11 + PrecipMM12), 
                               select = c("NHDPlusID", "PrecipA"))
@@ -943,6 +988,47 @@ get_annual_precip <- function(geodatabase_path, nhdr_input_lines){
   
   message("Joining to NHDHR Lines...")
   
-  nhdr_precip <- merge(nhdr_lines, annual_precip, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE)
-  return(annual_precip)
+  nhdphr_precip <- merge(nhdphr_lines, annual_precip, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
+    subset(select = c("NHDPlusIDt", "PrecipA"))
+  
+  nhdphr_precip[is.na(nhdphr_precip)] <- 0
+  
+  
+  return(nhdphr_precip)
+}
+
+
+#' Calculates the relationship table for input NHDPlusHR lines based on the NHDPlusFlow
+#' table(s) in the HUC4 NHDPlusHR file geodatabase(s)
+#' 
+#' @description To use the accumulation python script, you will need to provide 
+#' a relationship table that shows the order of flow for each NHDPlusID. This function
+#' creates this by joining the NHDPlusFlow table(s) to the input NHDPlusHR lines. 
+#' 
+#' @param geodatabase_path a vector containing the path(s) to the NHDPlus HR geodatabases
+#' that correspond to the HUC4s generated by `get_huc4()`
+#' 
+#' @param nhdphr_input_lines the dataframe created when running `read_nhdplus_lines()`
+
+get_relationship_table <- function(geodatabase_path, nhdphr_input_lines){
+  
+  rlshp <- st_read(geodatabase_path[1], layer = "NHDPlusFlow", quiet = TRUE)
+  
+  if (length(geodatabase_path) > 1) {
+    message("Evaluating additional data sources...")
+    for (i in 2:length(geodatabase_path)) {
+      rlshp2 <- st_read(geodatabase_path[i], layer = "NHDPlusFlow", quiet = TRUE) 
+      
+      
+      rlshp <- rbind(rlshp, rlshp2)
+    }
+  }
+  
+  message("Joining to NHDHR Lines...")
+  
+  rlshpTable <- filter(rlshp, FromNHDPID %in% nhdphr_input_lines$NHDPlusIDt) %>%
+    subset(select = c("FromNHDPID", "ToNHDPID"))
+  
+  
+  return(rlshpTable)
 }
