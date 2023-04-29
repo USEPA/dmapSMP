@@ -1,15 +1,14 @@
 Package: dmapSMP
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person(given = "First",
-           family = "Last",
-           role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+Title: Prepare NHDPlus HR Flowlines for Processing in RShade
+Version: 1.0.0.0000
+Author: Naomi Detenbeck
+Maintainer: Naomi Detenbeck <Detenbeck.Naomi@epa.gov>
+Description: The Shade Model Preprocessing tool is a process that prepares 
+  NHDPlus HR flowline datasets for processing in RShade. It does this by taking 
+  the spatial data, calculating new columns, and exporting to a csv that can be 
+  input directly into RShade. For instructions on how to use this process, please 
+  see the shade_model_preprocessing.Rmd included in this repository. 
+License:
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)

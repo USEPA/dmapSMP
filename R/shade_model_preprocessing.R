@@ -13,7 +13,7 @@
 #' 
 #' @param nhdplus_data A file path to either a shapefile or geodatabase that
 #' contains the NHDPlus HR lines you wish to process. This dataset must contain
-#' a row named NHDPlusID or NHDPlusIDt (text version of NHDPlusID field). 
+#' a column named NHDPlusID or NHDPlusIDt (text version of NHDPlusID field). 
 #' 
 #' @param nhdplus_feature_name If the file format for your input dataset is a 
 #' file geodatabase, then this parameter is used to designate the name of the
@@ -211,7 +211,7 @@ join_points_lines <- function(points, lines, left.join = TRUE, id.field = "site_
 #' The first method uses formulas from Development of Regional Curves for 
 #' Hydrologic Landscape Regions (HLR) in the Contiguous United States 
 #' (Blackburn-Lynch et al. 2017). The second method calculates the width of 
-#' NDH_Area polygons located in the NHDPlus HR geodatabase where shade sample
+#' NHD_Area polygons located in the NHDPlus HR geodatabase where shade sample
 #' points intersect. 
 #' 
 #' @param shade_points Needs to be a dataframe of class "sf" containing point
@@ -223,7 +223,7 @@ join_points_lines <- function(points, lines, left.join = TRUE, id.field = "site_
 #' a unique ID field called "site_id".
 #' 
 #' @param hlr Shapefile containing hydrologic landscape region areas with 
-#' coefficients and exponets for the BFW calculation equation described in
+#' coefficients and exponents for the BFW calculation equation described in
 #' Blackburn-Lynch et al. 2017 .
 #' 
 #' @param bfw_table File path to csv or excel file containing bankfull width values
@@ -932,7 +932,7 @@ finalize_cols <- function(points, ovrhng_dividend = 10){
 }
 
 #' Calculates the annual precipitation for each input NHDPlusID based on the 
-#' NDHPlusIncrPrecipMMxx tables in the HUC4 NHDPlusHR file geodatabase(s).
+#' NHDPlusIncrPrecipMMxx tables in the HUC4 NHDPlusHR file geodatabase(s).
 #' 
 #' @description To use the accumulation python script, you will need to provide 
 #' precipitation values for each NHDPlusID. The annual precipitation tables
@@ -989,7 +989,8 @@ get_annual_precip <- function(geodatabase_path, nhdphr_input_lines){
   message("Joining to NHDHR Lines...")
   
   nhdphr_precip <- merge(nhdphr_lines, annual_precip, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
-    subset(select = c("NHDPlusIDt", "PrecipA"))
+    subset(select = c("NHDPlusIDt", "PrecipA")) %>%
+    st_set_geometry(NULL)
   
   nhdphr_precip[is.na(nhdphr_precip)] <- 0
   

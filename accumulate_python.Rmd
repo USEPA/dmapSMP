@@ -7,7 +7,6 @@ Users, please note that this process can only be run if the shade_model_preproce
 process has been run through the BFW calculation step, and a HUC4 geodatabase was
 downloaded as a part of that process. 
 
-
 ```{r}
 annual_precip <- get_annual_precip(gdb_path, nhdphr_lines)
 
@@ -16,6 +15,14 @@ relationship <- get_relationship_table(gdb_path, nhdphr_lines)
 write_csv(annual_precip, "python/annual_precip.csv")
 write_csv(relationship, "python/relationships.csv")
 ```
+
+If you wish to accumulate a variable other than precipitation, you can upload a 
+dataset and corresponding relationship table containing the NHDPlusIDt column and
+a column containing the corresponding value you wish to accumulate. In the /python
+folder of this R project, upload your csv and change the names of the variables
+below to match your files and the column you wish to accumulate. Please note that
+the input data must have a field called NHDPlusIDt and the relationship csv must
+contain the columns "FromNHDPID" and "ToNHDPID".
 
 ```{r}
 metric <- "PrecipA"
@@ -26,5 +33,13 @@ input_relshpCSV <- "relationships.csv"
 ```{r}
 source_python("python/accumulatePrecip.py")
 accumulate_precip(metric, input_data, input_relshpCSV)
+```
+
+If a python package has not been installed in this environment, you can use the 
+function below to install it. Pandas may need to be installed the first time you 
+run this tool. 
+
+```{r}
+py_install("pandas")
 ```
 
