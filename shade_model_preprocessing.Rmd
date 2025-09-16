@@ -8,7 +8,9 @@ Start by setting the parameters for running Shade Model Preprocessing
 ```{r}
 # Input lines can come from either a shapefile or file geodatabase.
 # If you are using a shapefile, the input_lines_feature_name can be left as is, 
-# as it will be ignored by the code. 
+# as it will be ignored by the code. Sample points at which effective shade will
+# be calculated will automatically be generated at x meter intervals, specified
+# below by the user (default = 50m).
 
 input_lines <- "~/private/dmapSMP/data/test2.shp"
 
@@ -16,16 +18,20 @@ input_lines_feature_name <- "NHDFlowline"
 
 sample_point_distance <- 50
 
-# Bankfull width is calculated as a function of the watershed area using a
+# Bankfull width (BFW) is calculated as a function of the watershed area using a
 # coefficient (a) and an exponent (b) in the following equation:
 # BFW = a * (WatershedArea ^ b)
-# These values are determined automatically based on HLR. If you wish to use 
+# These values are determined automatically based on Hydrologic Landscape Region
+# (HLR; Blackburn-Lynch et al. 2017, DOI:10.1111/1752-1688.12540). If you wish to use 
 # your own values, you can designate them below. 
 
 bfw_a <- NA # make sure this is NA when not using your own value
 
 bfw_b <- NA # make sure this is NA when not using your own value
 
+# Shade is calculated by examining vegetation heights and topographic heights
+# (horizon angle) along transects radiating out from each shade point at
+# distances defined by star_sample_distances
 # Sample angles can only contain the angles 0, 45, 135, 180, 225, 270, 315. 
 # Values can be removed, but new values cannot be added
 
@@ -40,13 +46,15 @@ star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 export_star_sample_points <- TRUE
 
 # Vegetation overhang is calculates as a fraction of vegetation height.
-# The dividend can be specified below. 
+# The dividend (percentage) can be specified below. 
 
 overhang_dividend <- 10 # default value is 10
 
 # If you wish to use the provided grids for horizon angle, vegetation cover, and 
 # vegetation height, set the vales below to FALSE. Otherwise, populate with the
-# file path "data/yourGrid.tif".
+# file path "data/yourGrid.tif".  By default, vegetation cover and height are 
+# derived from the USFS Landfire datasets (https://landfire.gov/) resampled to a 
+# finer resolution
 
 external_horizon_angle <- FALSE
 
