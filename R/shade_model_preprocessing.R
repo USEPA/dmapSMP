@@ -38,10 +38,15 @@ read_nhdplus_lines <- function(nhdplus_data, nhdplus_feature_name) {
       st_transform(crs = 5070)
   }
   
-  if(("NHDPlusIDt" %in% colnames(data)) == FALSE){
-    
+  if(("NHDPlusIDt" %in% colnames(data)) == FALSE & 
+    ("NHDPlusID" %in% colnames(data)) == TRUE) {
     data <- transmute(data, NHDPlusIDt = as.character(NHDPlusID))
   }
+  
+  if(("NHDPlusIDt" %in% colnames(data)) == FALSE & 
+    ("nhdplusid" %in% colnames(data)) == TRUE) {
+    data <- transmute(data, NHDPlusIDt = as.character(nhdplusid))
+    } 
   
   
   message("Calculating Aspect")
@@ -273,13 +278,23 @@ calc_BFW <- function(shade_points,
     joinPoints <- join_points_lines(shade_points, nhdplus_lines)
     
     message("Joining VAA")
+    if(nonNHDPlusHR == FALSE) {    
     if(is.na(coeficient_a)| is.na(exponent_b)){
       points_vaa <- merge(joinPoints, vaa, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
         st_join(hlr)
     } else{
       points_vaa <- merge(joinPoints, vaa, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
         mutate(a = coeficient_a, b = exponent_b)
-    }
+    }}
+# Joining alternate source of watershed area data    
+   if(nonNHDPlusHR == TRUE) {
+     if(is.na(coeficient_a)| is.na(exponent_b)){
+     points_vaa <- merge(joinPoints, vaa2, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
+       st_join(hlr)
+   } else{
+     points_vaa <- merge(joinPoints, vaa2, by.x = "NHDPlusIDt", by.y = "NHDPlusID", all.x = TRUE) %>%
+       mutate(a = coeficient_a, b = exponent_b)
+   }}
     
     
     message("Calculating BFW")
