@@ -8,9 +8,14 @@ Start by setting the parameters for running Shade Model Preprocessing
 ```{r}
 # Input lines can come from either a shapefile or file geodatabase.
 # If you are using a shapefile, the input_lines_feature_name can be left as is, 
-# as it will be ignored by the code. Sample points at which effective shade will
-# be calculated will automatically be generated at x meter intervals, specified
-# below by the user (default = 50m).
+# as it will be ignored by the code. 
+# Whether the input format is a shapefile or a file geodatabase, the file MUST
+# contain a variable named NHDPlusIDt (note: case-sensitive) that is a character
+# version of NDHPlusID or COMID
+# The default is to use flowlines from NHDPlus HR. If users wish to use an alternate
+# flowline data source, set nonNHDPlusHR == TRUE.
+
+nonNHDPlusHR == FALSE
 
 input_lines <- "~/private/dmapSMP/data/test2.shp"
 
@@ -18,26 +23,22 @@ input_lines_feature_name <- "NHDFlowline"
 
 sample_point_distance <- 50
 
-# Bankfull width (BFW) is calculated as a function of the watershed area using a
+# Bankfull width is calculated as a function of the watershed area using a
 # coefficient (a) and an exponent (b) in the following equation:
 # BFW = a * (WatershedArea ^ b)
-# These values are determined automatically based on Hydrologic Landscape Region
-# (HLR; Blackburn-Lynch et al. 2017, DOI:10.1111/1752-1688.12540). If you wish to use 
+# These values are determined automatically based on HLR. If you wish to use 
 # your own values, you can designate them below. 
 
 bfw_a <- NA # make sure this is NA when not using your own value
 
 bfw_b <- NA # make sure this is NA when not using your own value
 
-# Shade is calculated by examining vegetation heights and topographic heights
-# (horizon angle) along transects radiating out from each shade point at
-# distances defined by star_sample_distances
 # Sample angles can only contain the angles 0, 45, 135, 180, 225, 270, 315. 
 # Values can be removed, but new values cannot be added
 
 star_sample_angles <- c(0, 45, 90, 135, 180, 225, 270, 315)
 
-# Distances are in meters
+# Distances are in meters - these specify the vegetation zone widths
 
 star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 
@@ -46,15 +47,13 @@ star_sample_distances <- c(3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39)
 export_star_sample_points <- TRUE
 
 # Vegetation overhang is calculates as a fraction of vegetation height.
-# The dividend (percentage) can be specified below. 
+# The dividend can be specified below. 
 
 overhang_dividend <- 10 # default value is 10
 
 # If you wish to use the provided grids for horizon angle, vegetation cover, and 
 # vegetation height, set the vales below to FALSE. Otherwise, populate with the
-# file path "data/yourGrid.tif".  By default, vegetation cover and height are 
-# derived from the USFS Landfire datasets (https://landfire.gov/) resampled to a 
-# finer resolution
+# file path "data/yourGrid.tif".
 
 external_horizon_angle <- FALSE
 
@@ -84,7 +83,7 @@ devtools::load_all()
 ```
 
 This step imports your NHDPlus HR lines, retrieves the correct columns, and 
-gets is into the correct coordinate system.
+gets it into the correct coordinate system.
 
 ```{r}
 nhdphr_lines <- read_nhdplus_lines(input_lines, input_lines_feature_name)
@@ -96,6 +95,15 @@ especially if your input dataset is large.
 
 ```{r}
 shade_points <- sample_shade_points(nhdphr_lines, sample_point_distance)
+```
+
+This optional step reads in an alternative source of watershed areas for users
+employing a flowline not from NHDPlusHR.  The Excel or csv file must contain
+the variables NHDPlusID and TotDASqKM (total drainage area in square km).  Edit
+the block below to include the path to the excel or csv file.
+
+```{r}
+vaa2 <- "data/VAA2.xlsx"
 ```
 
 This step calculates the bankfull width (BFW) of each shade point. By default, this function will start by using a mathematical equation to calculate BFW and then move on to checking for available river/stream boundary polygons and measuring the BFW of applicable shade points using the length of perpendicular
@@ -117,7 +125,7 @@ RShade_points <- calc_BFW(shade_points,
 This step adds and populates latitude and longitude fields.
 
 ```{r}
-RShade_points <- add_latlon(RShade_points)
+RShade_points2 <- add_latlon(RShade_points)
 ```
 
 This step retrieves the elevation in meters from an input raster at each point and puts
@@ -126,7 +134,7 @@ be a fairly large raster dataset, which could take a few minutes. Each raster on
 needs to be downloaded the first time it is used.
 
 ```{r}
-RShade_points <- extract_elevation(RShade_points, rpu_boundaries)
+RShade_points3 <- extract_elevation(RShade_points2, rpu_boundaries)
 ```
 
 
@@ -146,7 +154,7 @@ Band 7: 270-degrees Horizon Angle
 Band 8: 315-degrees Horizon Angle
 
 ```{r}
-RShade_points <- extract_horizon_angle(RShade_points, rpu_boundaries)
+RShade_points4 <- extract_horizon_angle(RShade_points3, rpu_boundaries)
 ```
 
 The next two steps extract vegetation cover and height values from the resampled
@@ -154,7 +162,7 @@ Landfire grids. The more angles and distances sampled, the longer these steps
 will take. 
 
 ```{r}
-RShade_points <- star_sample(RShade_points, 
+RShade_points5 <- star_sample(RShade_points4, 
                              veg_height, 
                              star_sample_angles, 
                              star_sample_distances, 
@@ -163,7 +171,7 @@ RShade_points <- star_sample(RShade_points,
 ```
 
 ```{r}
-RShade_points <- star_sample(RShade_points, 
+RShade_points6 <- star_sample(RShade_points5, 
                              veg_cover, 
                              star_sample_angles, 
                              star_sample_distances, 
@@ -175,7 +183,7 @@ RShade. This is done at the end because many of the columns are based on other
 columns that were calculated as a part of Shade Model Prepreocessing. 
 
 ```{r}
-RShade_points <- finalize_cols(RShade_points, overhang_dividend)
+RShade_points7 <- finalize_cols(RShade_points6, overhang_dividend)
 ```
 
 
@@ -187,21 +195,21 @@ to the excel or csv.
 ```{r}
 additional_table <- "data/Test_table.xlsx"
 
-RShade_points <- copy_table(RShade_points, nhdphr_lines, additional_table)
+RShade_points7 <- copy_table(RShade_points7, nhdphr_lines, additional_table)
 ```
 
 
 The final dataset can now be exported as a CSV file. This file will be the input
 for RShade. 
 ```{r}
-write_csv(RShade_points, "data/Output.csv")
+write_csv(RShade_points7, "data/Output.csv")
 ```
 
 The final optional steps allow you to export the final result as a shapefile. 
 This can then be downloaded from the "Files" window.
 
 ```{r}
-st_write(RShade_points, "data/Output.shp")
+st_write(RShade_points7, "data/Output.shp")
 ```
 
 
