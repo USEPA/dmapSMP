@@ -38,7 +38,7 @@ system("chmod a+x ./shell/get_ha.sh")
 system("chmod a+x ./shell/get_dem.sh")
 
 
-message("Downloading Required Files")
+message("Downloading Required Files for Vegetation, Raster Processing Unit Boundaries, HUC4 Boundaries, and Hydrologic Landscape Regions")
 system("./shell/get_data.sh")
 
 
