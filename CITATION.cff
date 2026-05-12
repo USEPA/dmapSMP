@@ -1,0 +1,38 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: 'dmapSMP: Shade Model Preprocessing Tool'
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Zachary
+    family-names: Britten
+    affiliation: SAIC
+    email: Zachary.T.Britten@saic.com
+  - given-names: Naomi
+    family-names: Detenbeck
+    email: detenbeck.naomi@epa.gov
+    affiliation: US EPA
+    orcid: 'https://orcid.org/0000-0002-9868-0475'
+repository-code: 'https://github.com/USEPA/dmapSMP/'
+abstract: >-
+  The dmapSMP Shade Model Preprocessing tool is a process
+  that prepares NHDPlus High Resolution (HR) flowline
+  datasets for processing in RShade
+  (https://github.com/USEPA/dmap-RShade) which in turn can
+  generate estimates of topographic and vegetative shade at
+  equally spaced intervals along a stream network. dmapSMP
+  does this by taking the spatial data, calculating new
+  columns, and exporting to a csv that can be input directly
+  into RShade.
+keywords:
+  - shade
+  - preprocessor
+  - RShade
+  - NHDPlus HR
+license: GPL-3.0
+version: '2.0'
+date-released: '2026-05-01'
