@@ -13,11 +13,15 @@ Start by setting the parameters for running Shade Model Preprocessing
 # contain a variable named NHDPlusIDt (note: case-sensitive) that is a character
 # version of NDHPlusID or COMID
 # The default is to use flowlines from NHDPlus HR. If users wish to use an alternate
-# flowline data source, set nonNHDPlusHR == TRUE.
+# flowline data source, set nonNHDPlusHR = TRUE. Example files for alternative
+# flowlines are provided in the data directory as test2_nonNHDPlus.shp and
+# test2_TotDASqKM.csv.
 
-nonNHDPlusHR == FALSE
+nonNHDPlusHR = FALSE
 
-input_lines <- "~/private/dmapSMP/data/test2.shp"
+# replace "updates" with the name of the directory you created for this project
+
+input_lines <- "~/private/updates/dmapSMP/data/test2.shp"
 
 input_lines_feature_name <- "NHDFlowline"
 
@@ -99,7 +103,7 @@ shade_points <- sample_shade_points(nhdphr_lines, sample_point_distance)
 
 This optional step reads in an alternative source of watershed areas for users
 employing a flowline not from NHDPlusHR.  The Excel or csv file must contain
-the variables NHDPlusID and TotDASqKM (total drainage area in square km).  Edit
+the variables NHDPlusIDt and TotDASqKM (total drainage area in square km).  Edit
 the block below to include the path to the excel or csv file.
 
 ```{r}
@@ -187,7 +191,7 @@ RShade_points7 <- finalize_cols(RShade_points6, overhang_dividend)
 ```
 
 
-If you have additional columns you want to add to the output, you can upload a
+Optional: If you have additional columns you want to add to the output, you can upload a
 table that contains the columns you want to include along with a text field 
 containing ID values called NDHPlusIDt. Edit the block below to include the path
 to the excel or csv.
